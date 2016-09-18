@@ -23,5 +23,5 @@ channel =
         |> Channel.on "new_msg" NewMsg
 
 subscriptions model =
-    connect socket [channel]
+    Phoenix.connect socket [channel]
 ```
