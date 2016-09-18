@@ -50,7 +50,7 @@ type MySub msg
             |> Channel.on "new_msg" NewMsg
 
     subscriptions model =
-        connect socket channel
+        connect socket [channel]
 
 **Note**: An empty channel list keeps the socket connection open.
 -}
