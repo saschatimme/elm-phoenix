@@ -61,6 +61,16 @@ removeIn a b dict =
         Dict.update a remove dict
 
 
+add : a -> Maybe (List a) -> Maybe (List a)
+add value maybeList =
+    case maybeList of
+        Nothing ->
+            Just [ value ]
+
+        Just list ->
+            Just (value :: list)
+
+
 decodeReplyPayload : Value -> Maybe (Result Value Value)
 decodeReplyPayload value =
     let

@@ -258,46 +258,6 @@ sendPushsHelp cmds state =
                     <&> sendPushsHelp rest
 
 
-{-| pushes a message to a certain socket. Queues the message if the channel is not joined.
--}
-pushSocket : Endpoint -> Message -> Maybe (SelfCallback msg) -> State msg -> Task x (State msg)
-pushSocket endpoint message selfCb state =
-    let
-        queuedState =
-            Task.succeed
-                { state
-                    | channelQueues = Helpers.updateIn endpoint message.topic (add ( message, selfCb )) state.channelQueues
-                }
-
-        afterSocketPush socket maybeRef =
-            case maybeRef of
-                Nothing ->
-                    queuedState
-
-                Just ref ->
-                    insertSocket endpoint (SocketHelpers.increaseRef socket) state
-                        |> insertSelfCallback ref selfCb
-                        |> Task.succeed
-    in
-        case Dict.get endpoint state.sockets of
-            Nothing ->
-                queuedState
-
-            Just socket ->
-                case ChannelHelpers.get endpoint message.topic state.channels of
-                    Nothing ->
-                        queuedState
-
-                    Just channel ->
-                        case channel.state of
-                            Channel.Joined ->
-                                SocketHelpers.push message socket
-                                    <&> afterSocketPush socket
-
-                            _ ->
-                                queuedState
-
-
 handleSocketsUpdate : Platform.Router msg (Msg msg) -> SocketsDict -> SocketsDict -> Task Never (SocketsDict)
 handleSocketsUpdate router definedSockets stateSockets =
     let
@@ -376,6 +336,10 @@ sendLeaveChannel router endpoint channel =
     Platform.sendToSelf router (LeaveChannel endpoint channel)
 
 
+
+-- STATE UPDATE HELPERS
+
+
 updateSocket : Endpoint -> Socket -> State msg -> State msg
 updateSocket endpoint socket state =
     { state | sockets = Dict.insert endpoint socket state.sockets }
@@ -394,6 +358,25 @@ updateSelfCallbacks selfCallbacks state =
 removeChannelQueue : Endpoint -> Topic -> State msg -> State msg
 removeChannelQueue endpoint topic state =
     { state | channelQueues = Helpers.removeIn endpoint topic state.channelQueues }
+
+
+insertSocket : Endpoint -> Socket -> State msg -> State msg
+insertSocket endpoint socket state =
+    { state
+        | sockets = Dict.insert endpoint socket state.sockets
+    }
+
+
+insertSelfCallback : Ref -> Maybe (SelfCallback msg) -> State msg -> State msg
+insertSelfCallback ref maybeSelfCb state =
+    case maybeSelfCb of
+        Nothing ->
+            state
+
+        Just selfCb ->
+            { state
+                | selfCallbacks = Dict.insert ref selfCb state.selfCallbacks
+            }
 
 
 
@@ -584,6 +567,22 @@ onSelfMsg router selfMsg state =
             Task.succeed state
 
 
+handleSelfcallback : Platform.Router msg (Msg msg) -> Endpoint -> Message -> Dict Ref (SelfCallback msg) -> Task x (Dict Ref (SelfCallback msg))
+handleSelfcallback router endpoint message selfCallbacks =
+    case message.ref of
+        Nothing ->
+            Task.succeed selfCallbacks
+
+        Just ref ->
+            case Dict.get ref selfCallbacks of
+                Nothing ->
+                    Task.succeed selfCallbacks
+
+                Just selfCb ->
+                    Platform.sendToSelf router (selfCb message)
+                        &> Task.succeed (Dict.remove ref selfCallbacks)
+
+
 processQueue : Endpoint -> List ( Message, Maybe (SelfCallback msg) ) -> State msg -> Task x (State msg)
 processQueue endpoint messages state =
     case messages of
@@ -613,6 +612,55 @@ getEventCbs endpoint message channels =
 
         Just channel ->
             Dict.get message.event channel.on
+
+
+handleChannelJoinReply : Platform.Router msg (Msg msg) -> Endpoint -> Topic -> Message -> Channel.State -> ChannelsDict msg -> Task x (ChannelsDict msg)
+handleChannelJoinReply router endpoint topic message prevState channels =
+    let
+        maybeChannel =
+            ChannelHelpers.get endpoint topic channels
+
+        maybePayload =
+            Helpers.decodeReplyPayload message.payload
+
+        newChannels state =
+            Task.succeed (ChannelHelpers.insertState endpoint topic state channels)
+
+        handlePayload channel payload =
+            case payload of
+                Err response ->
+                    case channel.onJoinError of
+                        Nothing ->
+                            newChannels Channel.Errored
+
+                        Just onError ->
+                            Platform.sendToApp router (onError response) &> newChannels Channel.Errored
+
+                Ok response ->
+                    let
+                        join =
+                            Platform.sendToSelf router (GoodJoin endpoint topic)
+                                &> newChannels Channel.Joined
+                    in
+                        case prevState of
+                            Channel.Disconnected ->
+                                case channel.onRejoin of
+                                    Nothing ->
+                                        join
+
+                                    Just onRejoin ->
+                                        Platform.sendToApp router (onRejoin response) &> join
+
+                            _ ->
+                                case channel.onJoin of
+                                    Nothing ->
+                                        join
+
+                                    Just onJoin ->
+                                        Platform.sendToApp router (onJoin response) &> join
+    in
+        Maybe.map2 handlePayload maybeChannel maybePayload
+            |> Maybe.withDefault (Task.succeed channels)
 
 
 handleChannelDisconnect : Platform.Router msg (Msg msg) -> Endpoint -> State msg -> Task x (State msg)
@@ -677,71 +725,6 @@ heartbeatMessage =
     Message.init "phoenix" "heartbeat"
 
 
-handleChannelJoinReply : Platform.Router msg (Msg msg) -> Endpoint -> Topic -> Message -> Channel.State -> ChannelsDict msg -> Task x (ChannelsDict msg)
-handleChannelJoinReply router endpoint topic message prevState channels =
-    let
-        maybeChannel =
-            ChannelHelpers.get endpoint topic channels
-
-        maybePayload =
-            Helpers.decodeReplyPayload message.payload
-
-        newChannels state =
-            Task.succeed (ChannelHelpers.insertState endpoint topic state channels)
-
-        handlePayload channel payload =
-            case payload of
-                Err response ->
-                    case channel.onJoinError of
-                        Nothing ->
-                            newChannels Channel.Errored
-
-                        Just onError ->
-                            Platform.sendToApp router (onError response) &> newChannels Channel.Errored
-
-                Ok response ->
-                    let
-                        join =
-                            Platform.sendToSelf router (GoodJoin endpoint topic)
-                                &> newChannels Channel.Joined
-                    in
-                        case prevState of
-                            Channel.Disconnected ->
-                                case channel.onRejoin of
-                                    Nothing ->
-                                        join
-
-                                    Just onRejoin ->
-                                        Platform.sendToApp router (onRejoin response) &> join
-
-                            _ ->
-                                case channel.onJoin of
-                                    Nothing ->
-                                        join
-
-                                    Just onJoin ->
-                                        Platform.sendToApp router (onJoin response) &> join
-    in
-        Maybe.map2 handlePayload maybeChannel maybePayload
-            |> Maybe.withDefault (Task.succeed channels)
-
-
-handleSelfcallback : Platform.Router msg (Msg msg) -> Endpoint -> Message -> Dict Ref (SelfCallback msg) -> Task x (Dict Ref (SelfCallback msg))
-handleSelfcallback router endpoint message selfCallbacks =
-    case message.ref of
-        Nothing ->
-            Task.succeed selfCallbacks
-
-        Just ref ->
-            case Dict.get ref selfCallbacks of
-                Nothing ->
-                    Task.succeed selfCallbacks
-
-                Just selfCb ->
-                    Platform.sendToSelf router (selfCb message)
-                        &> Task.succeed (Dict.remove ref selfCallbacks)
-
-
 channelRejoin : Endpoint -> State msg -> Task x (State msg)
 channelRejoin endpoint state =
     case Dict.get endpoint state.channels of
@@ -783,6 +766,10 @@ sendJoinHelper endpoint channels state =
                     <&> \newState -> sendJoinHelper endpoint rest newState
 
 
+
+-- PUSH MESSAGES
+
+
 {-| pushes a message to a certain socket. Ignores if the sending failes.
 -}
 pushSocket' : Endpoint -> Message -> Maybe (SelfCallback msg) -> State msg -> Task x (State msg)
@@ -804,33 +791,44 @@ pushSocket' endpoint message maybeSelfCb state =
                                     |> Task.succeed
 
 
-insertSocket : Endpoint -> Socket -> State msg -> State msg
-insertSocket endpoint socket state =
-    { state
-        | sockets = Dict.insert endpoint socket state.sockets
-    }
+{-| pushes a message to a certain socket. Queues the message if the channel is not joined.
+-}
+pushSocket : Endpoint -> Message -> Maybe (SelfCallback msg) -> State msg -> Task x (State msg)
+pushSocket endpoint message selfCb state =
+    let
+        queuedState =
+            Task.succeed
+                { state
+                    | channelQueues = Helpers.updateIn endpoint message.topic (Helpers.add ( message, selfCb )) state.channelQueues
+                }
 
+        afterSocketPush socket maybeRef =
+            case maybeRef of
+                Nothing ->
+                    queuedState
 
-insertSelfCallback : Ref -> Maybe (SelfCallback msg) -> State msg -> State msg
-insertSelfCallback ref maybeSelfCb state =
-    case maybeSelfCb of
-        Nothing ->
-            state
+                Just ref ->
+                    insertSocket endpoint (SocketHelpers.increaseRef socket) state
+                        |> insertSelfCallback ref selfCb
+                        |> Task.succeed
+    in
+        case Dict.get endpoint state.sockets of
+            Nothing ->
+                queuedState
 
-        Just selfCb ->
-            { state
-                | selfCallbacks = Dict.insert ref selfCb state.selfCallbacks
-            }
+            Just socket ->
+                case ChannelHelpers.get endpoint message.topic state.channels of
+                    Nothing ->
+                        queuedState
 
+                    Just channel ->
+                        case channel.state of
+                            Channel.Joined ->
+                                SocketHelpers.push message socket
+                                    <&> afterSocketPush socket
 
-add : a -> Maybe (List a) -> Maybe (List a)
-add value maybeList =
-    case maybeList of
-        Nothing ->
-            Just [ value ]
-
-        Just list ->
-            Just (value :: list)
+                            _ ->
+                                queuedState
 
 
 
