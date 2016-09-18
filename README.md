@@ -9,6 +9,7 @@ This package makes it easy to connect to Phoenix Channels, but in a more declara
 Declare a socket you want to connect to and the channels you want to join. The effect manager will open the socket connection, join the channels. See `Phoenix.Socket` and `Phoenix.Channel` for more configuration details.
 
 ```elm
+import Phoenix
 import Phoenix.Socket as Socket
 import Phoenix.Channel as Channel
 
