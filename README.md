@@ -2,7 +2,7 @@
 
 An Elm client for [Phoenix](http://www.phoenixframework.org) Channels.
 
-This package makes it easy to connect to Phoenix Channels, but in a more declarative manner than the Phoenix Socket Javascript library. Simply provide a `Socket` and a list of `Channel`s you want to join and this library handles the tedious parts like opening a connection, joining channels, reconnecting after a network error and registering event handlers.
+This package makes it easy to connect to Phoenix Channels, but in a more declarative manner than the Phoenix Socket Javascript library. Simply provide a `Socket` and a list of `Channel`s you want to join and this library handles the unpleasent parts like opening a connection, joining channels, reconnecting after a network error and managing replies.
 
 ## Getting Started
 
