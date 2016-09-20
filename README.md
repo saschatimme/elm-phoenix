@@ -26,3 +26,6 @@ channel =
 subscriptions model =
     Phoenix.connect socket [channel]
 ```
+
+### TODO:
+- An example Phoenix implementation
