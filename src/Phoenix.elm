@@ -284,10 +284,15 @@ handleChannelsUpdate router definedChannels stateChannels =
     let
         leftStep endpoint definedEndpointChannels getNewChannels =
             let
+                sendJoin =
+                    Dict.values definedEndpointChannels
+                        |> List.foldl (\channel task -> task &> sendJoinChannel router endpoint channel)
+                            (Task.succeed ())
+
                 insert newChannels =
                     Task.succeed (Dict.insert endpoint definedEndpointChannels newChannels)
             in
-                getNewChannels <&> insert
+                sendJoin &> getNewChannels <&> insert
 
         bothStep endpoint definedEndpointChannels stateEndpointChannels getNewChannels =
             let
@@ -314,7 +319,7 @@ handleEndpointChannelsUpdate : Platform.Router msg (Msg msg) -> Endpoint -> Dict
 handleEndpointChannelsUpdate router endpoint definedChannels stateChannels =
     let
         leftStep topic defined getNewChannels =
-            Task.map (Dict.insert topic defined) getNewChannels
+            (sendJoinChannel router endpoint defined) &> Task.map (Dict.insert topic defined) getNewChannels
 
         bothStep topic defined state getNewChannels =
             let
@@ -334,6 +339,11 @@ handleEndpointChannelsUpdate router endpoint definedChannels stateChannels =
 sendLeaveChannel : Platform.Router msg (Msg msg) -> Endpoint -> Channel msg -> Task Never ()
 sendLeaveChannel router endpoint channel =
     Platform.sendToSelf router (LeaveChannel endpoint channel)
+
+
+sendJoinChannel : Platform.Router msg (Msg msg) -> Endpoint -> Channel msg -> Task Never ()
+sendJoinChannel router endpoint channel =
+    Platform.sendToSelf router (JoinChannel endpoint channel)
 
 
 
@@ -393,6 +403,7 @@ type Msg msg
     | GoodOpen String WS.WebSocket
     | BadOpen String WS.BadOpen
     | Register
+    | JoinChannel Endpoint (Channel msg)
     | LeaveChannel Endpoint (Channel msg)
     | ChannelLeaveReply Endpoint (Channel msg) Message
     | ChannelJoinReply Endpoint Topic Channel.State Message
@@ -496,6 +507,20 @@ onSelfMsg router selfMsg state =
         ChannelJoinReply endpoint topic oldState message ->
             (handleChannelJoinReply router endpoint topic message oldState state.channels)
                 |> Task.map (\newChannels -> updateChannels newChannels state)
+
+        JoinChannel endpoint channel ->
+            case Dict.get endpoint state.sockets of
+                Nothing ->
+                    Task.succeed state
+
+                Just socket ->
+                    case socket.connection of
+                        Socket.Connected _ _ ->
+                            pushSocket' endpoint (ChannelHelpers.joinMessage channel) (Just <| ChannelJoinReply endpoint channel.topic channel.state) state
+
+                        -- Nothing to do GoodOpen will handle the join
+                        _ ->
+                            Task.succeed state
 
         LeaveChannel endpoint channel ->
             case Dict.get endpoint state.sockets of
