@@ -27,6 +27,7 @@ type alias Channel msg =
     , onJoin : Maybe (Value -> msg)
     , onJoinError : Maybe (Value -> msg)
     , onDisconnect : Maybe msg
+    , onError : Maybe msg
     , onRejoin : Maybe (Value -> msg)
     , onLeave : Maybe (Value -> msg)
     , onLeaveError : Maybe (Value -> msg)
@@ -57,6 +58,7 @@ init topic =
     , onJoin = Nothing
     , onJoinError = Nothing
     , onDisconnect = Nothing
+    , onError = Nothing
     , onRejoin = Nothing
     , onLeave = Nothing
     , onLeaveError = Nothing
@@ -109,17 +111,32 @@ onJoin onJoin' chan =
             { chan | onJoin = Just onJoin' }
 
 
-{-| Set a callback which will be called after if the server declined your request to join the channel.
+{-| Set a callback which will be called if the server declined your request to join the channel.
 
     type Msg =
         CouldNotJoin Json.Encode.Value | ...
 
     init "room:lobby"
         |> onJoinError CouldNotJoin
+
+**Note**: If a channel declined a request to join a topic the effect manager won't try again.
 -}
 onJoinError : (Value -> msg) -> Channel msg -> Channel msg
 onJoinError onJoinError' chan =
     { chan | onJoinError = Just onJoinError' }
+
+
+{-| Set a callback which will be called if the channel process on the server crashed. The effect manager will automatically rejoin the channel after a crash.
+
+    type Msg =
+         ChannelCrashed | ...
+
+    init "room:lobby"
+        |> onError ChannelCrashed
+-}
+onError : msg -> Channel msg -> Channel msg
+onError onError' chan =
+    { chan | onError = Just onError' }
 
 
 {-| Set a callback which will be called if the socket connection got interrupted. Useful to switch the online status to offline.

@@ -33,7 +33,7 @@ type MySub msg
     = Connect Socket (List (Channel msg))
 
 
-{-| Declare a socket you want to connect to and the channels you want to join. The effect manager will open the socket connection, join the channels. See `Phoenix.Socket` and `Phoenix.Channel` for more configuration details.
+{-| Declare a socket you want to connect to and the channels you want to join. The effect manager will open the socket connection, join the channels. See `Phoenix.Socket` and `Phoenix.Channel` for more configuration and behaviour details.
 
     import Phoenix.Socket as Socket
     import Phoenix.Channel as Channel
@@ -338,7 +338,12 @@ handleEndpointChannelsUpdate router endpoint definedChannels stateChannels =
 
 sendLeaveChannel : Platform.Router msg (Msg msg) -> Endpoint -> Channel msg -> Task Never ()
 sendLeaveChannel router endpoint channel =
-    Platform.sendToSelf router (LeaveChannel endpoint channel)
+    case channel.state of
+        Channel.Joined ->
+            Platform.sendToSelf router (LeaveChannel endpoint channel)
+
+        _ ->
+            Task.succeed ()
 
 
 sendJoinChannel : Platform.Router msg (Msg msg) -> Endpoint -> Channel msg -> Task Never ()
@@ -430,7 +435,7 @@ onSelfMsg router selfMsg state =
                     in
                         (heartbeat router endpoint state')
                             <&> \newState ->
-                                    channelRejoin endpoint newState
+                                    rejoinAllChannels endpoint newState
 
                 Nothing ->
                     let
@@ -501,8 +506,10 @@ onSelfMsg router selfMsg state =
 
         Receive endpoint message ->
             dispatchMessage router endpoint message state.channels
-                &> (handleSelfcallback router endpoint message state.selfCallbacks)
-                |> Task.map (\selfCbs -> updateSelfCallbacks selfCbs state)
+                &> ((handleSelfcallback router endpoint message state.selfCallbacks)
+                        |> Task.map (\selfCbs -> updateSelfCallbacks selfCbs state)
+                   )
+                <&> handlePhoenixMessage router endpoint message
 
         ChannelJoinReply endpoint topic oldState message ->
             (handleChannelJoinReply router endpoint topic message oldState state.channels)
@@ -528,7 +535,12 @@ onSelfMsg router selfMsg state =
                     Task.succeed state
 
                 Just socket ->
-                    pushSocket' endpoint (ChannelHelpers.leaveMessage channel) (Just <| ChannelLeaveReply endpoint channel) state
+                    case channel.state of
+                        Channel.Joined ->
+                            pushSocket' endpoint (ChannelHelpers.leaveMessage channel) (Just <| ChannelLeaveReply endpoint channel) state
+
+                        _ ->
+                            Task.succeed state
 
         ChannelLeaveReply endpoint channel message ->
             case Helpers.decodeReplyPayload message.payload of
@@ -619,9 +631,40 @@ processQueue endpoint messages state =
                 <&> processQueue endpoint rest
 
 
+handlePhoenixMessage : Platform.Router msg (Msg msg) -> Endpoint -> Message -> State msg -> Task x (State msg)
+handlePhoenixMessage router endpoint message state =
+    case message.event of
+        "phx_error" ->
+            case Helpers.getIn endpoint message.topic state.channels of
+                Nothing ->
+                    Task.succeed state
+
+                Just channel ->
+                    let
+                        newChannel =
+                            ChannelHelpers.updateState Channel.Errored channel
+
+                        sendToApp =
+                            case channel.onError of
+                                Nothing ->
+                                    Task.succeed ()
+
+                                Just onError ->
+                                    Platform.sendToApp router onError
+                    in
+                        sendToApp &> sendJoinHelper endpoint [ newChannel ] state
+
+        -- TODO do we have to do something here?
+        "phx_close" ->
+            Task.succeed state
+
+        _ ->
+            Task.succeed state
+
+
 dispatchMessage : Platform.Router msg (Msg msg) -> Endpoint -> Message -> ChannelsDict msg -> Task x ()
 dispatchMessage router endpoint message channels =
-    case getEventCbs endpoint message channels of
+    case getEventCb endpoint message channels of
         Nothing ->
             Task.succeed ()
 
@@ -629,8 +672,8 @@ dispatchMessage router endpoint message channels =
             Platform.sendToApp router (cb message.payload)
 
 
-getEventCbs : Endpoint -> Message -> ChannelsDict msg -> Maybe (Callback msg)
-getEventCbs endpoint message channels =
+getEventCb : Endpoint -> Message -> ChannelsDict msg -> Maybe (Callback msg)
+getEventCb endpoint message channels =
     case Helpers.getIn endpoint message.topic channels of
         Nothing ->
             Nothing
@@ -750,27 +793,14 @@ heartbeatMessage =
     Message.init "phoenix" "heartbeat"
 
 
-channelRejoin : Endpoint -> State msg -> Task x (State msg)
-channelRejoin endpoint state =
+rejoinAllChannels : Endpoint -> State msg -> Task x (State msg)
+rejoinAllChannels endpoint state =
     case Dict.get endpoint state.channels of
         Nothing ->
             Task.succeed state
 
         Just endpointChannels ->
-            let
-                sendJoin =
-                    sendJoinHelper endpoint (Dict.values endpointChannels) state
-
-                updateChannel _ channel =
-                    case channel.state of
-                        _ ->
-                            ChannelHelpers.updateState Channel.Joining channel
-
-                newChannels =
-                    Dict.map updateChannel endpointChannels
-            in
-                Task.map (\newState -> { newState | channels = Dict.insert endpoint newChannels newState.channels })
-                    sendJoin
+            sendJoinHelper endpoint (Dict.values endpointChannels) state
 
 
 sendJoinHelper : Endpoint -> List (Channel msg) -> State msg -> Task x (State msg)
@@ -786,8 +816,14 @@ sendJoinHelper endpoint channels state =
 
                 message =
                     ChannelHelpers.joinMessage channel
+
+                newChannel =
+                    ChannelHelpers.updateState Channel.Joining channel
+
+                newChannels =
+                    Helpers.insertIn endpoint channel.topic newChannel state.channels
             in
-                pushSocket' endpoint message (Just selfCb) state
+                pushSocket' endpoint message (Just selfCb) (updateChannels newChannels state)
                     <&> \newState -> sendJoinHelper endpoint rest newState
 
 

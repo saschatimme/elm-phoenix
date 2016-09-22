@@ -28,6 +28,7 @@ map func chan =
         { chan
             | onJoin = f chan.onJoin
             , onJoinError = f chan.onJoinError
+            , onError = Maybe.map func chan.onError
             , onDisconnect = Maybe.map func chan.onDisconnect
             , onRejoin = f chan.onRejoin
             , onLeave = f chan.onLeave
