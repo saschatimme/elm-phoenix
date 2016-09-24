@@ -27,5 +27,5 @@ subscriptions model =
     Phoenix.connect socket [channel]
 ```
 
-### TODO:
-- An example Phoenix implementation
+## Example
+A simple example chat application can be found [here](https://github.com/saschatimme/elm-phoenix/tree/master/example).
