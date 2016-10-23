@@ -29,3 +29,6 @@ subscriptions model =
 
 ## Example
 A simple example chat application can be found [here](https://github.com/saschatimme/elm-phoenix/tree/master/example).
+
+## Installation:
+Since this package is an [effect manager](https://guide.elm-lang.org/effect_managers/) it is at the moment not aviable via elm package. Thus the recommended way to install the package is to simply clone the project and to specify the relative path to the project in the `elmBrunch` part of the the `brunch-config.js` ([example](https://github.com/saschatimme/elm-phoenix/blob/master/example/brunch-config.js)).
