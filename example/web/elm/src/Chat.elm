@@ -1,9 +1,8 @@
 module Chat exposing (..)
 
 import Json.Encode as JE
-import Json.Decode as JD exposing (Decoder, (:=))
+import Json.Decode as JD exposing (Decoder)
 import Html exposing (Html)
-import Html.App
 import Html.Attributes as Attr
 import Html.Events as Events
 import Phoenix
@@ -12,9 +11,9 @@ import Phoenix.Socket as Socket exposing (Socket)
 import Phoenix.Push as Push
 
 
-main : Program Never
+main : Program Never Model Msg
 main =
-    Html.App.program
+    Html.program
         { init = init
         , update = update
         , subscriptions = subscriptions
@@ -122,15 +121,15 @@ update message model =
 
 decodeNewMsg : Decoder Message
 decodeNewMsg =
-    JD.object2 (\userName msg -> Message { userName = userName, message = msg })
-        ("user_name" := JD.string)
-        ("msg" := JD.string)
+    JD.map2 (\userName msg -> Message { userName = userName, message = msg })
+        (JD.field "user_name" JD.string)
+        (JD.field "msg" JD.string)
 
 
 decodeUserJoinedMsg : Decoder Message
 decodeUserJoinedMsg =
-    JD.object1 UserJoined
-        ("user_name" := JD.string)
+    JD.map UserJoined
+        (JD.field "user_name" JD.string)
 
 
 
