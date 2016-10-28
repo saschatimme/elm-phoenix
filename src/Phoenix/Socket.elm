@@ -63,7 +63,7 @@ withParams params socket =
     { socket | params = params }
 
 
-{-| The client regularly sends a heartbeat to the server. With this function you can specify the intervall in which the heartbeats are send. By default it's 30 seconds.
+{-| The client regularly sends a heartbeat to the server. With this function you can specify the intervall in which the heartbeats are send. By default it_s 30 seconds.
 
     init "ws://localhost:4000/socket/websocket"
         |> heartbeatIntervallSeconds 60

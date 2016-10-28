@@ -82,15 +82,15 @@ type MyCmd msg
 **Note**: The message will be queued until you successfully joined a channel to the topic of the message.
 -}
 push : String -> Push msg -> Cmd msg
-push endpoint push' =
-    command (Send endpoint push')
+push endpoint push_ =
+    command (Send endpoint push_)
 
 
 cmdMap : (a -> b) -> MyCmd a -> MyCmd b
 cmdMap func cmd =
     case cmd of
-        Send endpoint push' ->
-            Send endpoint (Push.map func push')
+        Send endpoint push_ ->
+            Send endpoint (Push.map func push_)
 
 
 
@@ -237,8 +237,8 @@ buildChannelsDict subs dict =
 
         (Connect { endpoint } channels) :: rest ->
             let
-                build channel dict' =
-                    buildChannelsDict rest (Helpers.insertIn endpoint channel.topic channel dict')
+                build channel dict_ =
+                    buildChannelsDict rest (Helpers.insertIn endpoint channel.topic channel dict_)
             in
                 List.foldl build dict channels
 
@@ -430,10 +430,10 @@ onSelfMsg router selfMsg state =
                             else
                                 endpoint
 
-                        state' =
+                        state_ =
                             insertSocket endpoint (SocketHelpers.connected ws socket) state
                     in
-                        (heartbeat router endpoint state')
+                        (heartbeat router endpoint state_)
                             <&> \newState ->
                                     rejoinAllChannels endpoint newState
 
@@ -455,7 +455,7 @@ onSelfMsg router selfMsg state =
                     let
                         _ =
                             if socket.debug then
-                                Debug.log ("WebSocket couldn't connect with " ++ endpoint) details
+                                Debug.log ("WebSocket couldn_t connect with " ++ endpoint) details
                             else
                                 details
 
@@ -502,7 +502,7 @@ onSelfMsg router selfMsg state =
                             Task.map (updateSocket endpoint (SocketHelpers.opening backoffIteration pid socket)) getNewState
                     in
                         attemptOpen router backoff socket
-                            `Task.andThen` finalNewState
+                            |> Task.andThen finalNewState
 
         Receive endpoint message ->
             dispatchMessage router endpoint message state.channels
@@ -523,7 +523,7 @@ onSelfMsg router selfMsg state =
                 Just socket ->
                     case socket.connection of
                         Socket.Connected _ _ ->
-                            pushSocket' endpoint (ChannelHelpers.joinMessage channel) (Just <| ChannelJoinReply endpoint channel.topic channel.state) state
+                            pushSocket_ endpoint (ChannelHelpers.joinMessage channel) (Just <| ChannelJoinReply endpoint channel.topic channel.state) state
 
                         -- Nothing to do GoodOpen will handle the join
                         _ ->
@@ -537,7 +537,7 @@ onSelfMsg router selfMsg state =
                 Just socket ->
                     case channel.state of
                         Channel.Joined ->
-                            pushSocket' endpoint (ChannelHelpers.leaveMessage channel) (Just <| ChannelLeaveReply endpoint channel) state
+                            pushSocket_ endpoint (ChannelHelpers.leaveMessage channel) (Just <| ChannelLeaveReply endpoint channel) state
 
                         _ ->
                             Task.succeed state
@@ -577,7 +577,7 @@ onSelfMsg router selfMsg state =
                     processQueue endpoint queuedMessages state
                         |> Task.map (removeChannelQueue endpoint topic)
 
-        PushResponse push' message ->
+        PushResponse push_ message ->
             case Helpers.decodeReplyPayload message.payload of
                 Nothing ->
                     Task.succeed state
@@ -585,7 +585,7 @@ onSelfMsg router selfMsg state =
                 Just reply ->
                     case reply of
                         Err error ->
-                            case push'.onError of
+                            case push_.onError of
                                 Nothing ->
                                     Task.succeed state
 
@@ -593,7 +593,7 @@ onSelfMsg router selfMsg state =
                                     Platform.sendToApp router (onError error) &> Task.succeed state
 
                         Ok ok ->
-                            case push'.onOk of
+                            case push_.onOk of
                                 Nothing ->
                                     Task.succeed state
 
@@ -782,7 +782,7 @@ heartbeat router endpoint state =
                 Task.succeed state
             else
                 (Process.spawn (Process.sleep socket.heartbeatIntervall &> (Platform.sendToSelf router (SendHeartbeat endpoint))))
-                    &> pushSocket' endpoint heartbeatMessage Nothing state
+                    &> pushSocket_ endpoint heartbeatMessage Nothing state
 
         Nothing ->
             Task.succeed state
@@ -823,7 +823,7 @@ sendJoinHelper endpoint channels state =
                 newChannels =
                     Helpers.insertIn endpoint channel.topic newChannel state.channels
             in
-                pushSocket' endpoint message (Just selfCb) (updateChannels newChannels state)
+                pushSocket_ endpoint message (Just selfCb) (updateChannels newChannels state)
                     <&> \newState -> sendJoinHelper endpoint rest newState
 
 
@@ -833,8 +833,8 @@ sendJoinHelper endpoint channels state =
 
 {-| pushes a message to a certain socket. Ignores if the sending failes.
 -}
-pushSocket' : Endpoint -> Message -> Maybe (SelfCallback msg) -> State msg -> Task x (State msg)
-pushSocket' endpoint message maybeSelfCb state =
+pushSocket_ : Endpoint -> Message -> Maybe (SelfCallback msg) -> State msg -> Task x (State msg)
+pushSocket_ endpoint message maybeSelfCb state =
     case Dict.get endpoint state.sockets of
         Nothing ->
             Task.succeed state
@@ -914,8 +914,8 @@ attemptOpen router backoff socket =
             Platform.sendToSelf router (BadOpen socket.endpoint details)
 
         actuallyAttemptOpen =
-            (open socket router `Task.andThen` goodOpen)
-                `Task.onError` badOpen
+            (open socket router |> Task.andThen goodOpen)
+                |> Task.onError badOpen
     in
         Process.spawn (after backoff &> actuallyAttemptOpen)
 

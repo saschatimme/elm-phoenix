@@ -1,7 +1,7 @@
 module Phoenix.ChannelHelpers exposing (..)
 
 import Dict exposing (Dict)
-import Json.Decode as Decode exposing (Value, (:=))
+import Json.Decode as Decode exposing (Value)
 import Phoenix.Helpers as Helpers
 import Phoenix.Channel exposing (..)
 import Phoenix.Message as Message exposing (Message)
@@ -47,8 +47,8 @@ joinMessage { topic, payload } =
             Nothing ->
                 base
 
-            Just payload' ->
-                Message.payload payload' base
+            Just payload_ ->
+                Message.payload payload_ base
 
 
 leaveMessage : Channel msg -> Message
@@ -75,7 +75,7 @@ getState endpoint topic channelsDict =
         |> Maybe.map (\{ state } -> state)
 
 
-{-|  Inserts the state, identity if channel for given endpoint topic doesn't exist
+{-|  Inserts the state, identity if channel for given endpoint topic doesn_t exist
 -}
 insertState : Endpoint -> Topic -> State -> ChannelsDict msg -> ChannelsDict msg
 insertState endpoint topic state dict =
