@@ -6,7 +6,7 @@ module Phoenix.Channel exposing (Channel, State(..), init, withPayload, onJoin, 
 @docs Channel, State
 
 # Helpers
-@docs init, withPayload, on, onJoin, onJoinError, onDisconnect, onRejoin, onLeave, onLeaveError, withDebug
+@docs init, withPayload, on, onJoin, onJoinError, onError, onDisconnect, onRejoin, onLeave, onLeaveError, withDebug
 
 -}
 
