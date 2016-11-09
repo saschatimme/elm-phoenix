@@ -27,8 +27,25 @@ subscriptions model =
     Phoenix.connect socket [channel]
 ```
 
+## Installation:
+Since this package is an [effect manager](https://guide.elm-lang.org/effect_managers/) it is at the moment not aviable via elm package. Thus the recommended way to install the package is to use [elm-github-install](https://github.com/gdotdesign/elm-github-install). Simply add in `elm-package.json` `"saschatimme/elm-phoenix": "0.1.0 <= v < 1.0"` to your dependencies:
+```
+# elm-package.json
+{
+  ...
+  "dependencies": {
+    ...
+    "saschatimme/elm-phoenix": "0.1.0 <= v < 1.0",
+    ...
+  }
+  ...
+}
+```
+and install the package with `elm-github-install`.
+
+## Documentation
+Everything is prepared such that the package has the same nice documentation as packages on [elm-package](http://package.elm-lang.org).
+As a workaround I included the generated [`documentation.json`](https://github.com/saschatimme/elm-phoenix/blob/master/documentation.json) so that you can preview if it at http://package.elm-lang.org/help/docs-preview.
+
 ## Example
 A simple example chat application can be found [here](https://github.com/saschatimme/elm-phoenix/tree/master/example).
-
-## Installation:
-Since this package is an [effect manager](https://guide.elm-lang.org/effect_managers/) it is at the moment not aviable via elm package. Thus the recommended way to install the package is to simply clone the project and to specify the relative path to the project in the `elmBrunch` part of the the `brunch-config.js` ([example](https://github.com/saschatimme/elm-phoenix/blob/master/example/brunch-config.js)).
