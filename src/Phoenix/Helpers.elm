@@ -1,57 +1,58 @@
 module Phoenix.Helpers exposing (..)
 
-import Json.Decode as Decode exposing (Value, (:=))
+import Json.Decode as Decode exposing (Value)
 import Dict exposing (Dict)
 import Task exposing (Task)
 
 
-getIn : comparable -> comparable' -> Dict comparable (Dict comparable' value) -> Maybe value
+getIn : comparable -> comparable_ -> Dict comparable (Dict comparable_ value) -> Maybe value
 getIn a b dict =
-    Dict.get a dict `Maybe.andThen` (Dict.get b)
+    Dict.get a dict
+        |> Maybe.andThen (Dict.get b)
 
 
-updateIn : comparable -> comparable' -> (Maybe value -> Maybe value) -> Dict comparable (Dict comparable' value) -> Dict comparable (Dict comparable' value)
+updateIn : comparable -> comparable_ -> (Maybe value -> Maybe value) -> Dict comparable (Dict comparable_ value) -> Dict comparable (Dict comparable_ value)
 updateIn a b update dict =
     let
-        update' maybeDict =
+        update_ maybeDict =
             let
-                dict' =
+                dict_ =
                     Dict.update b update (Maybe.withDefault Dict.empty maybeDict)
             in
-                if Dict.isEmpty dict' then
+                if Dict.isEmpty dict_ then
                     Nothing
                 else
-                    Just dict'
+                    Just dict_
     in
-        Dict.update a update' dict
+        Dict.update a update_ dict
 
 
-insertIn : comparable -> comparable' -> value -> Dict comparable (Dict comparable' value) -> Dict comparable (Dict comparable' value)
+insertIn : comparable -> comparable_ -> value -> Dict comparable (Dict comparable_ value) -> Dict comparable (Dict comparable_ value)
 insertIn a b value dict =
     let
-        update' maybeValue =
+        update_ maybeValue =
             case maybeValue of
                 Nothing ->
                     Just (Dict.singleton b value)
 
-                Just dict' ->
-                    Just (Dict.insert b value dict')
+                Just dict_ ->
+                    Just (Dict.insert b value dict_)
     in
-        Dict.update a update' dict
+        Dict.update a update_ dict
 
 
-removeIn : comparable -> comparable' -> Dict comparable (Dict comparable' value) -> Dict comparable (Dict comparable' value)
+removeIn : comparable -> comparable_ -> Dict comparable (Dict comparable_ value) -> Dict comparable (Dict comparable_ value)
 removeIn a b dict =
     let
-        remove maybeDict' =
-            case maybeDict' of
+        remove maybeDict_ =
+            case maybeDict_ of
                 Nothing ->
                     Nothing
 
-                Just dict' ->
+                Just dict_ ->
                     let
                         newDict =
-                            Dict.remove b dict'
+                            Dict.remove b dict_
                     in
                         if Dict.isEmpty newDict then
                             Nothing
@@ -75,7 +76,7 @@ decodeReplyPayload : Value -> Maybe (Result Value Value)
 decodeReplyPayload value =
     let
         result =
-            Decode.decodeValue (("status" := Decode.string) `Decode.andThen` statusInfo)
+            Decode.decodeValue ((Decode.field "status" Decode.string) |> Decode.andThen statusInfo)
                 value
     in
         case result of
@@ -94,10 +95,10 @@ statusInfo : String -> Decode.Decoder (Result Value Value)
 statusInfo status =
     case status of
         "ok" ->
-            Decode.map Ok ("response" := Decode.value)
+            Decode.map Ok (Decode.field "response" Decode.value)
 
         "error" ->
-            Decode.map Err ("response" := Decode.value)
+            Decode.map Err (Decode.field "response" Decode.value)
 
         _ ->
             Decode.fail (status ++ " is a not supported status")
@@ -105,9 +106,9 @@ statusInfo status =
 
 (&>) : Task b a -> Task b c -> Task b c
 (&>) t1 t2 =
-    Task.andThen t1 (\_ -> t2)
+    Task.andThen (\_ -> t2) t1
 
 
 (<&>) : Task b a -> (a -> Task b c) -> Task b c
 (<&>) x f =
-    x `Task.andThen` f
+    Task.andThen f x

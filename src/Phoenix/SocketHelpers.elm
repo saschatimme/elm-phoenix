@@ -55,13 +55,13 @@ push message socket =
     case socket.connection of
         Connected ws ref ->
             let
-                message' =
+                message_ =
                     if socket.debug then
                         Debug.log "Send" (Message.ref ref message)
                     else
                         Message.ref ref message
             in
-                WS.send ws (Message.encode message')
+                WS.send ws (Message.encode message_)
                     |> Task.map
                         (\maybeBadSend ->
                             (case maybeBadSend of
@@ -144,14 +144,14 @@ get endpoint dict =
 
 getRef : Endpoint -> Dict Endpoint Socket -> Maybe Ref
 getRef endpoint dict =
-    get endpoint dict `Maybe.andThen` ref
+    get endpoint dict |> Maybe.andThen ref
 
 
 ref : Socket -> Maybe Ref
 ref socket =
     case socket.connection of
-        Connected _ ref' ->
-            Just ref'
+        Connected _ ref_ ->
+            Just ref_
 
         _ ->
             Nothing

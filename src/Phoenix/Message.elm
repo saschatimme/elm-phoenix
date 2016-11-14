@@ -2,7 +2,7 @@ module Phoenix.Message exposing (..)
 
 import Phoenix.Push as Push exposing (Push)
 import Json.Encode as JE
-import Json.Decode as JD exposing (Value, (:=))
+import Json.Decode as JD exposing (Value)
 
 
 type alias Message =
@@ -31,13 +31,13 @@ init topic event =
 
 
 payload : Value -> Message -> Message
-payload payload' message =
-    { message | payload = payload' }
+payload payload_ message =
+    { message | payload = payload_ }
 
 
 ref : Ref -> Message -> Message
-ref ref' message =
-    { message | ref = Just ref' }
+ref ref_ message =
+    { message | ref = Just ref_ }
 
 
 fromPush : Push msg -> Message
@@ -61,10 +61,10 @@ decode : String -> Result String Message
 decode msg =
     let
         decoder =
-            JD.object4 Message
-                ("topic" := JD.string)
-                ("event" := JD.string)
-                ("payload" := JD.value)
-                ("ref" := JD.oneOf [ JD.map Just JD.int, JD.null Nothing ])
+            JD.map4 Message
+                (JD.field "topic" JD.string)
+                (JD.field "event" JD.string)
+                (JD.field "payload" JD.value)
+                (JD.field "ref" (JD.oneOf [ JD.map Just JD.int, JD.null Nothing ]))
     in
         JD.decodeString decoder msg
