@@ -1,12 +1,12 @@
-module Phoenix.SocketHelpers exposing (..)
+module Phoenix.Internal.Socket exposing (..)
 
 import Dict exposing (Dict)
 import Process
 import String
 import Task exposing (Task)
 import WebSocket.LowLevel as WS
-import Phoenix.Message as Message exposing (Message)
-import Phoenix.Socket as Socket exposing (..)
+import Phoenix.Internal.Message as Message exposing (Message)
+import Phoenix.Socket as Socket
 
 
 type alias Endpoint =
@@ -17,21 +17,38 @@ type alias Ref =
     Int
 
 
+{-| The underlying low-level InternalSocket connection.
+-}
+type Connection
+    = Closed
+    | Opening Int Process.Id
+    | Connected WS.WebSocket Int
+
+
+type alias InternalSocket =
+    { connection : Connection, socket : Socket.Socket }
+
+
+internalSocket : Socket.Socket -> InternalSocket
+internalSocket socket =
+    { connection = Closed, socket = socket }
+
+
 
 -- MODIFY
 
 
-opening : Int -> Process.Id -> Socket -> Socket
+opening : Int -> Process.Id -> InternalSocket -> InternalSocket
 opening backoff pid socket =
-    { socket | connection = Opening backoff pid }
+    { socket | connection = (Opening backoff pid) }
 
 
-connected : WS.WebSocket -> Socket -> Socket
+connected : WS.WebSocket -> InternalSocket -> InternalSocket
 connected ws socket =
-    { socket | connection = Connected ws 0 }
+    { socket | connection = (Connected ws 0) }
 
 
-increaseRef : Socket -> Socket
+increaseRef : InternalSocket -> InternalSocket
 increaseRef socket =
     case socket.connection of
         Connected ws ref ->
@@ -41,18 +58,18 @@ increaseRef socket =
             socket
 
 
-updateParams : List ( String, String ) -> Socket -> Socket
-updateParams params socket =
-    { socket | params = params }
+update : Socket.Socket -> InternalSocket -> InternalSocket
+update socket { connection } =
+    InternalSocket connection socket
 
 
 
 -- PUSH
 
 
-push : Message -> Socket -> Task x (Maybe Ref)
-push message socket =
-    case socket.connection of
+push : Message -> InternalSocket -> Task x (Maybe Ref)
+push message { connection, socket } =
+    case connection of
         Connected ws ref ->
             let
                 message_ =
@@ -88,22 +105,19 @@ push message socket =
 -- OPEN CONNECTIONs
 
 
-open : Socket -> WS.Settings -> Task WS.BadOpen WS.WebSocket
-open socket settings =
+open : InternalSocket -> WS.Settings -> Task WS.BadOpen WS.WebSocket
+open { socket } settings =
     let
-        endpoint =
-            socket.endpoint
-
         query =
             socket.params
                 |> List.map (\( key, val ) -> key ++ "=" ++ val)
                 |> String.join "&"
 
         url =
-            if String.contains "?" endpoint then
-                endpoint ++ "&" ++ query
+            if String.contains "?" socket.endpoint then
+                socket.endpoint ++ "&" ++ query
             else
-                endpoint ++ "?" ++ query
+                socket.endpoint ++ "?" ++ query
     in
         WS.open url settings
 
@@ -120,7 +134,7 @@ after backoff =
 -- CLOSE CONNECTIONS
 
 
-close : Socket -> Task x ()
+close : InternalSocket -> Task x ()
 close { connection } =
     case connection of
         Opening _ pid ->
@@ -137,19 +151,19 @@ close { connection } =
 -- HELPERS
 
 
-get : Endpoint -> Dict Endpoint Socket -> Maybe Socket
+get : Endpoint -> Dict Endpoint InternalSocket -> Maybe InternalSocket
 get endpoint dict =
     Dict.get endpoint dict
 
 
-getRef : Endpoint -> Dict Endpoint Socket -> Maybe Ref
+getRef : Endpoint -> Dict Endpoint InternalSocket -> Maybe Ref
 getRef endpoint dict =
     get endpoint dict |> Maybe.andThen ref
 
 
-ref : Socket -> Maybe Ref
-ref socket =
-    case socket.connection of
+ref : InternalSocket -> Maybe Ref
+ref { connection } =
+    case connection of
         Connected _ ref_ ->
             Just ref_
 
@@ -157,8 +171,8 @@ ref socket =
             Nothing
 
 
-debugLogMessage : Socket -> a -> a
-debugLogMessage socket msg =
+debugLogMessage : InternalSocket -> a -> a
+debugLogMessage { socket } msg =
     if socket.debug then
         Debug.log "Received" msg
     else

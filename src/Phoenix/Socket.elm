@@ -1,40 +1,31 @@
-module Phoenix.Socket exposing (Socket, Connection(..), init, heartbeatIntervallSeconds, withoutHeartbeat, reconnectTimer, withParams, withDebug)
+module Phoenix.Socket exposing (Socket, init, heartbeatIntervallSeconds, withoutHeartbeat, reconnectTimer, withParams, withDebug)
 
 {-| A socket declares to which endpoint a socket connection should be established.
 
 # Definition
-@docs Socket, Connection
+@docs Socket
 
 # Helpers
 @docs init, withParams, heartbeatIntervallSeconds, withoutHeartbeat, reconnectTimer, withDebug
 -}
 
-import Process
 import Time exposing (Time)
-import WebSocket.LowLevel as WS
 
 
 {-| Representation of a Socket connection
-
-**Note**: You should use the helper functions to construct a socket.
 -}
 type alias Socket =
+    PhoenixSocket
+
+
+type alias PhoenixSocket =
     { endpoint : String
     , params : List ( String, String )
     , heartbeatIntervall : Time
     , withoutHeartbeat : Bool
-    , connection : Connection
     , reconnectTimer : Int -> Float
     , debug : Bool
     }
-
-
-{-| The underlying low-level socket connection. This is completely handled by the effect manager.
--}
-type Connection
-    = Closed
-    | Opening Int Process.Id
-    | Connected WS.WebSocket Int
 
 
 {-| Initialize a Socket connection with an endpoint.
@@ -47,7 +38,6 @@ init endpoint =
     , params = []
     , heartbeatIntervall = 30 * Time.second
     , withoutHeartbeat = False
-    , connection = Closed
     , reconnectTimer = defaultReconnectTimer
     , debug = False
     }

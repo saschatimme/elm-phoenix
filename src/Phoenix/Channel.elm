@@ -1,9 +1,9 @@
-module Phoenix.Channel exposing (Channel, State(..), init, withPayload, onJoin, onRejoin, onJoinError, onError, onDisconnect, on, onLeave, onLeaveError, withDebug)
+module Phoenix.Channel exposing (Channel, init, withPayload, onJoin, onRejoin, onJoinError, onError, onDisconnect, on, onLeave, onLeaveError, withDebug)
 
 {-| A channel declares which topic should be joined, registers event handlers and has various callbacks for possible lifecycle events.
 
 # Definition
-@docs Channel, State
+@docs Channel
 
 # Helpers
 @docs init, withPayload, on, onJoin, onJoinError, onError, onDisconnect, onRejoin, onLeave, onLeaveError, withDebug
@@ -18,10 +18,12 @@ import Json.Decode as Decode exposing (Value)
 
 
 {-| Representation of a Phoenix Channel
-
-**Note**: You should use the helper functions to construct a channel.
 -}
 type alias Channel msg =
+    PhoenixChannel msg
+
+
+type alias PhoenixChannel msg =
     { topic : String
     , payload : Maybe Value
     , onJoin : Maybe (Value -> msg)
@@ -33,18 +35,7 @@ type alias Channel msg =
     , onLeaveError : Maybe (Value -> msg)
     , on : Dict String (Value -> msg)
     , debug : Bool
-    , state : State
     }
-
-
-{-| The current channel state. This is completely handled by the effect manager.
--}
-type State
-    = Closed
-    | Joining
-    | Joined
-    | Errored
-    | Disconnected
 
 
 {-| Initialize a channel to a given topic.
@@ -64,7 +55,6 @@ init topic =
     , onLeaveError = Nothing
     , on = Dict.empty
     , debug = False
-    , state = Closed
     }
 
 

@@ -1,4 +1,4 @@
-module Phoenix.Message exposing (..)
+module Phoenix.Internal.Message exposing (..)
 
 import Phoenix.Push as Push exposing (Push)
 import Json.Encode as JE

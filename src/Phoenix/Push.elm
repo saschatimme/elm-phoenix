@@ -13,10 +13,12 @@ import Json.Encode exposing (Value)
 
 
 {-| The message abstraction
-
-**Note**: You should use the helper functions to construct a Push message.
 -}
 type alias Push msg =
+    PhoenixPush msg
+
+
+type alias PhoenixPush msg =
     { topic : String
     , event : String
     , payload : Value
@@ -39,7 +41,7 @@ type alias Event =
 -}
 init : Topic -> Event -> Push msg
 init topic event =
-    Push topic event (Json.Encode.object []) Nothing Nothing
+    PhoenixPush topic event (Json.Encode.object []) Nothing Nothing
 
 
 {-| Attach a payload to a message
