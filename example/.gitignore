@@ -16,6 +16,7 @@ erl_crash.dump
 /priv/static/
 /web/elm/elm-stuff/
 /static/vendor/
+/web/static/vendor/chat.js
 # The config/prod.secret.exs file by default contains sensitive
 # data and you should not commit it into version control.
 #
