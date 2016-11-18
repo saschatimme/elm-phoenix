@@ -25,30 +25,49 @@ type Connection
     | Connected WS.WebSocket Int
 
 
-type alias InternalSocket =
-    { connection : Connection, socket : Socket.Socket }
+type alias InternalSocket msg =
+    { connection : Connection, socket : Socket.Socket msg }
 
 
-internalSocket : Socket.Socket -> InternalSocket
+internalSocket : Socket.Socket msg -> InternalSocket msg
 internalSocket socket =
     { connection = Closed, socket = socket }
+
+
+
+-- INSPECT
+
+
+isOpening : InternalSocket msg -> Bool
+isOpening internalSocket =
+    case internalSocket.connection of
+        Opening _ _ ->
+            True
+
+        _ ->
+            False
 
 
 
 -- MODIFY
 
 
-opening : Int -> Process.Id -> InternalSocket -> InternalSocket
+socketMap : (a -> b) -> Socket.Socket a -> Socket.Socket b
+socketMap func socket =
+    { socket | onDie = Maybe.map func socket.onDie }
+
+
+opening : Int -> Process.Id -> InternalSocket msg -> InternalSocket msg
 opening backoff pid socket =
     { socket | connection = (Opening backoff pid) }
 
 
-connected : WS.WebSocket -> InternalSocket -> InternalSocket
+connected : WS.WebSocket -> InternalSocket msg -> InternalSocket msg
 connected ws socket =
     { socket | connection = (Connected ws 0) }
 
 
-increaseRef : InternalSocket -> InternalSocket
+increaseRef : InternalSocket msg -> InternalSocket msg
 increaseRef socket =
     case socket.connection of
         Connected ws ref ->
@@ -58,16 +77,33 @@ increaseRef socket =
             socket
 
 
-update : Socket.Socket -> InternalSocket -> InternalSocket
-update socket { connection } =
-    InternalSocket connection socket
+update : Socket.Socket msg -> InternalSocket msg -> InternalSocket msg
+update nextSocket { connection, socket } =
+    let
+        updatedConnection =
+            if nextSocket.params /= socket.params then
+                resetBackoff connection
+            else
+                connection
+    in
+        InternalSocket updatedConnection nextSocket
+
+
+resetBackoff : Connection -> Connection
+resetBackoff connection =
+    case connection of
+        Opening backoff pid ->
+            Opening 0 pid
+
+        _ ->
+            connection
 
 
 
 -- PUSH
 
 
-push : Message -> InternalSocket -> Task x (Maybe Ref)
+push : Message -> InternalSocket msg -> Task x (Maybe Ref)
 push message { connection, socket } =
     case connection of
         Connected ws ref ->
@@ -105,7 +141,7 @@ push message { connection, socket } =
 -- OPEN CONNECTIONs
 
 
-open : InternalSocket -> WS.Settings -> Task WS.BadOpen WS.WebSocket
+open : InternalSocket msg -> WS.Settings -> Task WS.BadOpen WS.WebSocket
 open { socket } settings =
     let
         query =
@@ -134,7 +170,7 @@ after backoff =
 -- CLOSE CONNECTIONS
 
 
-close : InternalSocket -> Task x ()
+close : InternalSocket msg -> Task x ()
 close { connection } =
     case connection of
         Opening _ pid ->
@@ -151,17 +187,17 @@ close { connection } =
 -- HELPERS
 
 
-get : Endpoint -> Dict Endpoint InternalSocket -> Maybe InternalSocket
+get : Endpoint -> Dict Endpoint (InternalSocket msg) -> Maybe (InternalSocket msg)
 get endpoint dict =
     Dict.get endpoint dict
 
 
-getRef : Endpoint -> Dict Endpoint InternalSocket -> Maybe Ref
+getRef : Endpoint -> Dict Endpoint (InternalSocket msg) -> Maybe Ref
 getRef endpoint dict =
     get endpoint dict |> Maybe.andThen ref
 
 
-ref : InternalSocket -> Maybe Ref
+ref : InternalSocket msg -> Maybe Ref
 ref { connection } =
     case connection of
         Connected _ ref_ ->
@@ -171,7 +207,7 @@ ref { connection } =
             Nothing
 
 
-debugLogMessage : InternalSocket -> a -> a
+debugLogMessage : InternalSocket msg -> a -> a
 debugLogMessage { socket } msg =
     if socket.debug then
         Debug.log "Received" msg

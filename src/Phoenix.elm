@@ -30,7 +30,7 @@ import Phoenix.Push as Push exposing (Push)
 
 
 type MySub msg
-    = Connect Socket (List (Channel msg))
+    = Connect (Socket msg) (List (Channel msg))
 
 
 {-| Declare a socket you want to connect to and the channels you want to join. The effect manager will open the socket connection, join the channels. See `Phoenix.Socket` and `Phoenix.Channel` for more configuration and behaviour details.
@@ -54,7 +54,7 @@ type MySub msg
 
 **Note**: An empty channel list keeps the socket connection open.
 -}
-connect : Socket -> List (Channel msg) -> Sub msg
+connect : Socket msg -> List (Channel msg) -> Sub msg
 connect socket channels =
     subscription (Connect socket channels)
 
@@ -101,7 +101,9 @@ subMap : (a -> b) -> MySub a -> MySub b
 subMap func sub =
     case sub of
         Connect socket channels ->
-            Connect socket (List.map (InternalChannel.channelMap func) channels)
+            Connect
+                (socket |> InternalSocket.socketMap func)
+                (channels |> List.map (InternalChannel.channelMap func))
 
 
 type alias Message =
@@ -113,15 +115,15 @@ type alias Message =
 
 
 type alias State msg =
-    { sockets : InternalSocketsDict
+    { sockets : InternalSocketsDict msg
     , channels : InternalChannelsDict msg
     , selfCallbacks : Dict Ref (SelfCallback msg)
     , channelQueues : ChannelQueuesDict msg
     }
 
 
-type alias InternalSocketsDict =
-    Dict Endpoint InternalSocket
+type alias InternalSocketsDict msg =
+    Dict Endpoint (InternalSocket msg)
 
 
 type alias InternalChannelsDict msg =
@@ -210,7 +212,7 @@ onEffects router cmds subs state =
 -- BUILD SOCKETS
 
 
-buildSocketsDict : List (MySub msg) -> Dict String Socket
+buildSocketsDict : List (MySub msg) -> Dict String (Socket msg)
 buildSocketsDict subs =
     let
         insert sub dict =
@@ -257,29 +259,29 @@ sendPushsHelp cmds state =
                     <&> sendPushsHelp rest
 
 
-handleSocketsUpdate : Platform.Router msg (Msg msg) -> Dict String Socket -> InternalSocketsDict -> Task Never InternalSocketsDict
+handleSocketsUpdate : Platform.Router msg (Msg msg) -> Dict String (Socket msg) -> InternalSocketsDict msg -> Task Never (InternalSocketsDict msg)
 handleSocketsUpdate router definedSockets stateSockets =
     let
-        -- leftStep: endpoints where we have to open a new socket connection
-        leftStep endpoint definedSocket getNewSockets =
+        -- addedSocketsStep: endpoints where we have to open a new socket connection
+        addedSocketsStep endpoint definedSocket taskChain =
             let
                 socket =
                     (InternalSocket.internalSocket definedSocket)
             in
-                getNewSockets
-                    <&> \newSockets ->
+                taskChain
+                    <&> \addedSockets ->
                             attemptOpen router 0 socket
                                 <&> \pid ->
-                                        Task.succeed (Dict.insert endpoint (InternalSocket.opening 0 pid socket) newSockets)
+                                        Task.succeed (Dict.insert endpoint (InternalSocket.opening 0 pid socket) addedSockets)
 
         -- we update the authentication parameters
-        bothStep endpoint definedSocket stateSocket getNewSockets =
-            Task.map (Dict.insert endpoint <| InternalSocket.update definedSocket stateSocket) getNewSockets
+        retainedSocketsStep endpoint definedSocket stateSocket taskChain =
+            taskChain |> Task.map (Dict.insert endpoint <| InternalSocket.update definedSocket stateSocket)
 
-        rightStep endpoint stateSocket getNewSockets =
-            InternalSocket.close stateSocket &> getNewSockets
+        removedSocketsStep endpoint stateSocket taskChain =
+            InternalSocket.close stateSocket &> taskChain
     in
-        Dict.merge leftStep bothStep rightStep definedSockets stateSockets (Task.succeed Dict.empty)
+        Dict.merge addedSocketsStep retainedSocketsStep removedSocketsStep definedSockets stateSockets (Task.succeed Dict.empty)
 
 
 handleChannelsUpdate : Platform.Router msg (Msg msg) -> InternalChannelsDict msg -> InternalChannelsDict msg -> Task Never (InternalChannelsDict msg)
@@ -358,7 +360,7 @@ sendJoinChannel router endpoint internalChannel =
 -- STATE UPDATE HELPERS
 
 
-updateSocket : Endpoint -> InternalSocket -> State msg -> State msg
+updateSocket : Endpoint -> InternalSocket msg -> State msg -> State msg
 updateSocket endpoint socket state =
     { state | sockets = Dict.insert endpoint socket state.sockets }
 
@@ -378,7 +380,7 @@ removeChannelQueue endpoint topic state =
     { state | channelQueues = Helpers.removeIn endpoint topic state.channelQueues }
 
 
-insertSocket : Endpoint -> InternalSocket -> State msg -> State msg
+insertSocket : Endpoint -> InternalSocket msg -> State msg -> State msg
 insertSocket endpoint socket state =
     { state
         | sockets = Dict.insert endpoint socket state.sockets
@@ -498,8 +500,21 @@ onSelfMsg router selfMsg state =
 
                         finalNewState pid =
                             Task.map (updateSocket endpoint (InternalSocket.opening backoffIteration pid internalSocket)) getNewState
+
+                        notifyApp =
+                            case
+                                ( internalSocket.socket.onDie
+                                , internalSocket |> InternalSocket.isOpening
+                                )
+                            of
+                                ( Just onDie, False ) ->
+                                    Platform.sendToApp router onDie &> Task.succeed ()
+
+                                _ ->
+                                    Task.succeed ()
                     in
-                        attemptOpen router backoff internalSocket
+                        notifyApp
+                            &> attemptOpen router backoff internalSocket
                             |> Task.andThen finalNewState
 
         Receive endpoint message ->
@@ -902,7 +917,7 @@ pushSocket endpoint message selfCb state =
 -- OPENING WEBSOCKETS WITH EXPONENTIAL BACKOFF
 
 
-attemptOpen : Platform.Router msg (Msg msg) -> Float -> InternalSocket -> Task x Process.Id
+attemptOpen : Platform.Router msg (Msg msg) -> Float -> InternalSocket msg -> Task x Process.Id
 attemptOpen router backoff ({ connection, socket } as internalSocket) =
     let
         goodOpen ws =
@@ -918,7 +933,7 @@ attemptOpen router backoff ({ connection, socket } as internalSocket) =
         Process.spawn (after backoff &> actuallyAttemptOpen)
 
 
-open : InternalSocket -> Platform.Router msg (Msg msg) -> Task WS.BadOpen WS.WebSocket
+open : InternalSocket msg -> Platform.Router msg (Msg msg) -> Task WS.BadOpen WS.WebSocket
 open socket router =
     let
         onMessage _ msg =

@@ -31,6 +31,7 @@ type alias Model =
     , state : State
     , messages : List Message
     , composedMessage : String
+    , accessToken : Int
     }
 
 
@@ -53,6 +54,7 @@ initModel =
     , messages = []
     , state = LeftLobby
     , composedMessage = ""
+    , accessToken = 1
     }
 
 
@@ -73,6 +75,7 @@ type Msg
     | NewMsg JD.Value
     | UserJoinedMsg JD.Value
     | SendComposedMessage
+    | RefreshAccessToken
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -114,6 +117,9 @@ update message model =
                 Err err ->
                     model ! []
 
+        RefreshAccessToken ->
+            { model | accessToken = model.accessToken + 1 } ! []
+
 
 
 -- Decoder
@@ -143,9 +149,11 @@ lobbySocket =
 
 {-| Initialize a socket with the default heartbeat intervall of 30 seconds
 -}
-socket : Socket
-socket =
+socket : Int -> Socket Msg
+socket accessToken =
     Socket.init lobbySocket
+        |> Socket.withParams [ ( "accessToken", toString accessToken ) ]
+        |> Socket.onDie RefreshAccessToken
 
 
 lobby : String -> Channel Msg
@@ -162,16 +170,20 @@ lobby userName =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    case model.state of
-        JoiningLobby ->
-            Phoenix.connect socket [ lobby model.userName ]
+    let
+        connect =
+            Phoenix.connect (socket model.accessToken)
+    in
+        case model.state of
+            JoiningLobby ->
+                connect [ lobby model.userName ]
 
-        JoinedLobby ->
-            Phoenix.connect socket [ lobby model.userName ]
+            JoinedLobby ->
+                connect [ lobby model.userName ]
 
-        -- we already open the socket connection so that we can faster join the lobby
-        _ ->
-            Phoenix.connect socket []
+            -- we already open the socket connection so that we can faster join the lobby
+            _ ->
+                connect []
 
 
 
@@ -235,7 +247,7 @@ button model =
                 Html.button [ buttonClass False, Events.onClick (UpdateState LeavingLobby) ] [ Html.text "Leave lobby" ]
 
 
-chatMessages : List (Message) -> Html Msg
+chatMessages : List Message -> Html Msg
 chatMessages messages =
     Html.div [ Attr.class "chat-messages" ]
         (List.map chatMessage messages)
