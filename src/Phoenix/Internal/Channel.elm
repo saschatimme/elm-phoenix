@@ -2,9 +2,9 @@ module Phoenix.Internal.Channel exposing (..)
 
 import Dict exposing (Dict)
 import Json.Decode as Decode exposing (Value)
-import Phoenix.Helpers as Helpers
-import Phoenix.Channel as Channel
+import Phoenix.Internal.Helpers as Helpers
 import Phoenix.Internal.Message as Message exposing (Message)
+import Phoenix.Channel as Channel
 
 
 {-| The current channel state. This is completely handled by the effect manager.

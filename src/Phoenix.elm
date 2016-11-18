@@ -17,12 +17,12 @@ import WebSocket.LowLevel as WS
 import Dict exposing (Dict)
 import Task exposing (Task)
 import Process
-import Phoenix.Internal.Message as Message exposing (Message)
-import Phoenix.Channel as Channel exposing (Channel)
 import Phoenix.Internal.Channel as InternalChannel exposing (InternalChannel)
-import Phoenix.Socket as Socket exposing (Socket)
+import Phoenix.Internal.Helpers as Helpers exposing ((&>), (<&>))
+import Phoenix.Internal.Message as Message exposing (Message)
 import Phoenix.Internal.Socket as InternalSocket exposing (InternalSocket)
-import Phoenix.Helpers as Helpers exposing ((&>), (<&>))
+import Phoenix.Channel as Channel exposing (Channel)
+import Phoenix.Socket as Socket exposing (Socket)
 import Phoenix.Push as Push exposing (Push)
 
 

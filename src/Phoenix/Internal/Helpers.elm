@@ -1,4 +1,4 @@
-module Phoenix.Helpers exposing (..)
+module Phoenix.Internal.Helpers exposing (..)
 
 import Json.Decode as Decode exposing (Value)
 import Dict exposing (Dict)
