@@ -109,15 +109,32 @@ insertState endpoint topic state dict =
 
 
 updateState : State -> InternalChannel msg -> InternalChannel msg
-updateState state { channel } =
-    if channel.debug then
+updateState state internalChannel =
+    if internalChannel.channel.debug then
         let
             _ =
-                Debug.log ("Channel \"" ++ channel.topic ++ "\"") state
+                case ( state, internalChannel.state ) of
+                    ( Closed, Closed ) ->
+                        state
+
+                    ( Joining, Joining ) ->
+                        state
+
+                    ( Joined, Joined ) ->
+                        state
+
+                    ( Errored, Errored ) ->
+                        state
+
+                    ( Disconnected, Disconnected ) ->
+                        state
+
+                    _ ->
+                        Debug.log ("Channel \"" ++ internalChannel.channel.topic ++ "\"") state
         in
-            (InternalChannel state channel)
+            (InternalChannel state internalChannel.channel)
     else
-        (InternalChannel state channel)
+        (InternalChannel state internalChannel.channel)
 
 
 updatePayload : Maybe Value -> InternalChannel msg -> InternalChannel msg
