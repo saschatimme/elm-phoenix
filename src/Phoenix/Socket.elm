@@ -1,4 +1,4 @@
-module Phoenix.Socket exposing (Socket, init, heartbeatIntervallSeconds, withoutHeartbeat, reconnectTimer, withParams, withDebug)
+module Phoenix.Socket exposing (Socket, init, heartbeatIntervallSeconds, withoutHeartbeat, reconnectTimer, withParams, withDebug, onDie)
 
 {-| A socket declares to which endpoint a socket connection should be established.
 
@@ -6,7 +6,7 @@ module Phoenix.Socket exposing (Socket, init, heartbeatIntervallSeconds, without
 @docs Socket
 
 # Helpers
-@docs init, withParams, heartbeatIntervallSeconds, withoutHeartbeat, reconnectTimer, withDebug
+@docs init, withParams, heartbeatIntervallSeconds, withoutHeartbeat, reconnectTimer, withDebug, onDie
 -}
 
 import Time exposing (Time)
@@ -14,17 +14,18 @@ import Time exposing (Time)
 
 {-| Representation of a Socket connection
 -}
-type alias Socket =
-    PhoenixSocket
+type alias Socket msg =
+    PhoenixSocket msg
 
 
-type alias PhoenixSocket =
+type alias PhoenixSocket msg =
     { endpoint : String
     , params : List ( String, String )
     , heartbeatIntervall : Time
     , withoutHeartbeat : Bool
     , reconnectTimer : Int -> Float
     , debug : Bool
+    , onDie : Maybe msg
     }
 
 
@@ -32,7 +33,7 @@ type alias PhoenixSocket =
 
     init "ws://localhost:4000/socket/websocket"
 -}
-init : String -> Socket
+init : String -> Socket msg
 init endpoint =
     { endpoint = endpoint
     , params = []
@@ -40,6 +41,7 @@ init endpoint =
     , withoutHeartbeat = False
     , reconnectTimer = defaultReconnectTimer
     , debug = False
+    , onDie = Nothing
     }
 
 
@@ -48,7 +50,7 @@ init endpoint =
     init "ws://localhost:4000/socket/websocket"
         |> withParams [("token", "GYMXZwXzKFzfxyGntVkYt7uAJnscVnFJ")]
 -}
-withParams : List ( String, String ) -> Socket -> Socket
+withParams : List ( String, String ) -> Socket msg -> Socket msg
 withParams params socket =
     { socket | params = params }
 
@@ -58,7 +60,7 @@ withParams params socket =
     init "ws://localhost:4000/socket/websocket"
         |> heartbeatIntervallSeconds 60
 -}
-heartbeatIntervallSeconds : Int -> Socket -> Socket
+heartbeatIntervallSeconds : Int -> Socket msg -> Socket msg
 heartbeatIntervallSeconds intervall socket =
     { socket | heartbeatIntervall = (toFloat intervall) * Time.second }
 
@@ -68,7 +70,7 @@ heartbeatIntervallSeconds intervall socket =
     init "ws://localhost:4000/socket/websocket"
         |> withoutHeartbeat
 -}
-withoutHeartbeat : Socket -> Socket
+withoutHeartbeat : Socket msg -> Socket msg
 withoutHeartbeat socket =
     { socket | withoutHeartbeat = True }
 
@@ -83,16 +85,31 @@ withoutHeartbeat socket =
 
 With this function you can specify a custom strategy.
 -}
-reconnectTimer : (Int -> Time) -> Socket -> Socket
+reconnectTimer : (Int -> Time) -> Socket msg -> Socket msg
 reconnectTimer timerFunc socket =
     { socket | reconnectTimer = timerFunc }
 
 
 {-| Enable debug logs for the socket. Every incoming and outgoing message will be printed.
 -}
-withDebug : Socket -> Socket
+withDebug : Socket msg -> Socket msg
 withDebug socket =
     { socket | debug = True }
+
+
+{-| Set a callback which will be called if the socket connection got interrupted. Useful for updating query params like access tokens.
+ +
+ +    type Msg =
+ +        RefreshAccessToken | ...
+ +
+ +    init "ws://localhost:4000/socket/websocket"
+ +        |> withParams [ ( "accessToken", "abc123" ) ]
+ +        |> onDie RefreshAccessToken
+ +
+-}
+onDie : msg -> Socket msg -> Socket msg
+onDie onDie_ socket =
+    { socket | onDie = Just onDie_ }
 
 
 defaultReconnectTimer : Int -> Time
