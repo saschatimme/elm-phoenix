@@ -153,7 +153,7 @@ socket : Int -> Socket Msg
 socket accessToken =
     Socket.init lobbySocket
         |> Socket.withParams [ ( "accessToken", toString accessToken ) ]
-        |> Socket.onDie RefreshAccessToken
+        |> Socket.onAbnormalClose RefreshAccessToken
 
 
 lobby : String -> Channel Msg

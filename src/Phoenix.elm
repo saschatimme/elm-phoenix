@@ -481,10 +481,10 @@ onSelfMsg router selfMsg state =
                 Nothing ->
                     Task.succeed state
 
-                Just internalSocket ->
+                Just ({ connection, socket } as internalSocket) ->
                     let
                         backoffIteration =
-                            case internalSocket.connection of
+                            case connection of
                                 InternalSocket.Opening n _ ->
                                     n + 1
 
@@ -492,7 +492,7 @@ onSelfMsg router selfMsg state =
                                     0
 
                         backoff =
-                            internalSocket.socket.reconnectTimer backoffIteration
+                            socket.reconnectTimer backoffIteration
 
                         -- update channels because of disconnect
                         getNewState =
@@ -501,19 +501,32 @@ onSelfMsg router selfMsg state =
                         finalNewState pid =
                             Task.map (updateSocket endpoint (InternalSocket.opening backoffIteration pid internalSocket)) getNewState
 
-                        notifyApp =
-                            case
-                                ( internalSocket.socket.onDie
-                                , internalSocket |> InternalSocket.isOpening
-                                )
-                            of
-                                ( Just onDie, False ) ->
-                                    Platform.sendToApp router onDie &> Task.succeed ()
+                        notifyOnClose =
+                            if InternalSocket.isOpening internalSocket then
+                                Task.succeed ()
+                            else
+                                Maybe.map (\onClose -> Platform.sendToApp router (onClose details)) socket.onClose
+                                    |> Maybe.withDefault (Task.succeed ())
 
-                                _ ->
-                                    Task.succeed ()
+                        notifyOnNormalClose =
+                            -- see https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent for error codes
+                            if InternalSocket.isOpening internalSocket || details.code /= 1000 then
+                                Task.succeed ()
+                            else
+                                Maybe.map (Platform.sendToApp router) socket.onNormalClose
+                                    |> Maybe.withDefault (Task.succeed ())
+
+                        notifyOnAbnormalClose =
+                            -- see https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent for error codes
+                            if InternalSocket.isOpening internalSocket || details.code /= 1006 then
+                                Task.succeed ()
+                            else
+                                Maybe.map (Platform.sendToApp router) socket.onAbnormalClose
+                                    |> Maybe.withDefault (Task.succeed ())
                     in
-                        notifyApp
+                        notifyOnClose
+                            &> notifyOnNormalClose
+                            &> notifyOnAbnormalClose
                             &> attemptOpen router backoff internalSocket
                             |> Task.andThen finalNewState
 

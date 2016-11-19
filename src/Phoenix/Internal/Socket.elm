@@ -54,7 +54,11 @@ isOpening internalSocket =
 
 socketMap : (a -> b) -> Socket.Socket a -> Socket.Socket b
 socketMap func socket =
-    { socket | onDie = Maybe.map func socket.onDie }
+    { socket
+        | onClose = Maybe.map ((<<) func) socket.onClose
+        , onNormalClose = Maybe.map func socket.onNormalClose
+        , onAbnormalClose = Maybe.map func socket.onAbnormalClose
+    }
 
 
 opening : Int -> Process.Id -> InternalSocket msg -> InternalSocket msg

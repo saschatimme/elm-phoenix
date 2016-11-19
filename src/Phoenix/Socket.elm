@@ -1,4 +1,4 @@
-module Phoenix.Socket exposing (Socket, init, heartbeatIntervallSeconds, withoutHeartbeat, reconnectTimer, withParams, withDebug, onDie)
+module Phoenix.Socket exposing (Socket, init, heartbeatIntervallSeconds, withoutHeartbeat, reconnectTimer, withParams, withDebug, onClose, onAbnormalClose, onNormalClose)
 
 {-| A socket declares to which endpoint a socket connection should be established.
 
@@ -6,7 +6,7 @@ module Phoenix.Socket exposing (Socket, init, heartbeatIntervallSeconds, without
 @docs Socket
 
 # Helpers
-@docs init, withParams, heartbeatIntervallSeconds, withoutHeartbeat, reconnectTimer, withDebug, onDie
+@docs init, withParams, heartbeatIntervallSeconds, withoutHeartbeat, reconnectTimer, withDebug, onAbnormalClose, onNormalClose, onClose
 -}
 
 import Time exposing (Time)
@@ -25,7 +25,9 @@ type alias PhoenixSocket msg =
     , withoutHeartbeat : Bool
     , reconnectTimer : Int -> Float
     , debug : Bool
-    , onDie : Maybe msg
+    , onClose : Maybe ({ code : Int, reason : String, wasClean : Bool } -> msg)
+    , onAbnormalClose : Maybe msg
+    , onNormalClose : Maybe msg
     }
 
 
@@ -41,7 +43,9 @@ init endpoint =
     , withoutHeartbeat = False
     , reconnectTimer = defaultReconnectTimer
     , debug = False
-    , onDie = Nothing
+    , onClose = Nothing
+    , onAbnormalClose = Nothing
+    , onNormalClose = Nothing
     }
 
 
@@ -97,19 +101,32 @@ withDebug socket =
     { socket | debug = True }
 
 
-{-| Set a callback which will be called if the socket connection got interrupted. Useful for updating query params like access tokens.
- +
- +    type Msg =
- +        RefreshAccessToken | ...
- +
- +    init "ws://localhost:4000/socket/websocket"
- +        |> withParams [ ( "accessToken", "abc123" ) ]
- +        |> onDie RefreshAccessToken
- +
+{-| Set a callback which will be called if the socket connection got closed abnormal, i.e., if the server declined the socket authentication. So this callback is useful for updating query params like access tokens.
+
+    type Msg =
+        RefreshAccessToken | ...
+
+        init "ws://localhost:4000/socket/websocket"
+            |> withParams [ ( "accessToken", "abc123" ) ]
+            |> onAbnormalClose RefreshAccessToken
 -}
-onDie : msg -> Socket msg -> Socket msg
-onDie onDie_ socket =
-    { socket | onDie = Just onDie_ }
+onAbnormalClose : msg -> Socket msg -> Socket msg
+onAbnormalClose onAbnormalClose_ socket =
+    { socket | onAbnormalClose = Just onAbnormalClose_ }
+
+
+{-| Set a callback which will be called if the socket connection got closed normal. Useful if you have to do some additional clean up.
+-}
+onNormalClose : msg -> Socket msg -> Socket msg
+onNormalClose onNormalClose_ socket =
+    { socket | onNormalClose = Just onNormalClose_ }
+
+
+{-| Set a callback which will be called if the socket connection got closed. You can learn more about the code [here](https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent).
+-}
+onClose : ({ code : Int, reason : String, wasClean : Bool } -> msg) -> Socket msg -> Socket msg
+onClose onClose_ socket =
+    { socket | onClose = Just onClose_ }
 
 
 defaultReconnectTimer : Int -> Time
