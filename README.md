@@ -51,3 +51,13 @@ As a workaround I included the generated [`documentation.json`](https://github.c
 
 ## Example
 A simple example chat application can be found [here](https://github.com/saschatimme/elm-phoenix/tree/master/example).
+
+## Contributing
+Contributions are welcome! If you get stuck or don't understand some details just get in touch.
+If you want to contribute but don't know what here are some ideas:
+
+- Add Presence support 
+- Improve the example app
+
+## Feedback
+If you use the package in your project, I would love to hear how your experience is and if you have some ideas for improvements!
