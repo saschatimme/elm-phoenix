@@ -46,8 +46,7 @@ and install the package with `elm-github-install`.
 The last compatible version with Elm 0.17 is `0.1.0`.
 
 ## Documentation
-Everything is prepared such that the package has the same nice documentation as packages on [elm-package](http://package.elm-lang.org).
-As a workaround I included the generated [`documentation.json`](https://github.com/saschatimme/elm-phoenix/blob/master/documentation.json) so that you can preview it at http://package.elm-lang.org/help/docs-preview.
+You can find the documentation [here](https://saschatimme.github.io/elm-phoenix).
 
 ## Example
 A simple example chat application can be found [here](https://github.com/saschatimme/elm-phoenix/tree/master/example).
