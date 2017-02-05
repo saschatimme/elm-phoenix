@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<!-- saved from url=(0062)./channel.html+ -->
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link rel="shortcut icon" size="16x16, 32x32, 48x48, 64x64, 128x128, 256x256" href="http://package.elm-lang.org/assets/favicon.ico">
+    <title>Elm-Phoenix</title>
+    <link rel="stylesheet" href="./default.css">
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+    <div>
+        <div class="center">
+    
+
+
+
+    <div class="entry-list"><h1 class="entry-list-title">Phoenix</h1><span class="markdown-entry"><div><p> An Elm client for <a href="http://www.phoenixframework.org/">Phoenix</a> Channels.</p>
+<p>This package makes it easy to connect to Phoenix Channels, but in a more declarative manner than the Phoenix Socket Javascript library. Simply provide a <code>Socket</code> and a list of <code>Channel</code>s you want to join and this library handles the tedious parts like opening a connection, joining channels, reconnecting after a network error and registering event handlers.</p>
+<h1 id="connect-with-phoenix">Connect with Phoenix</h1>
+</div></span><div class="docs-entry" id="connect"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#connect" style="font-weight: bold;">connect</a> <span>:</span> <a href="http://package.elm-lang.org/help/Phoenix-Socket#Socket">Socket</a> <span>-&gt;</span> List (<a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg) <span>-&gt;</span> Sub msg</div><div class="docs-comment"><div><p> Declare a socket you want to connect to and the channels you want to join. The effect manager will open the socket connection, join the channels. See <code>Phoenix.Socket</code> and <code>Phoenix.Channel</code> for more configuration and behaviour details.</p>
+<pre><code><span class="hljs-import"><span class="hljs-keyword">import</span> Phoenix.Socket <span class="hljs-keyword">as</span> Socket</span>
+<span class="hljs-import"><span class="hljs-keyword">import</span> Phoenix.Channel <span class="hljs-keyword">as</span> Channel</span>
+
+<span class="hljs-typedef"><span class="hljs-keyword">type</span> <span class="hljs-type">Msg</span> = <span class="hljs-type">NewMsg</span> <span class="hljs-type">Value</span> | ...</span>
+
+<span class="hljs-title">socket</span> =
+    <span class="hljs-type">Socket</span>.init <span class="hljs-string">"ws://localhost:4000/socket/websocket"</span>
+
+<span class="hljs-title">channel</span> =
+    <span class="hljs-type">Channel</span>.init <span class="hljs-string">"room:lobby"</span>
+        <span class="hljs-comment">-- register a handler for messages</span>
+        <span class="hljs-comment">-- with a "new_msg" event</span>
+        |&gt; <span class="hljs-type">Channel</span>.on <span class="hljs-string">"new_msg"</span> <span class="hljs-type">NewMsg</span>
+
+<span class="hljs-title">subscriptions</span> model =
+    connect socket [channel]
+</code></pre><p><strong>Note</strong>: An empty channel list keeps the socket connection open.</p>
+</div></div></div><span class="markdown-entry"><div><h1 id="push-messages">Push messages</h1>
+</div></span><div class="docs-entry" id="push"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#push" style="font-weight: bold;">push</a> <span>:</span> String <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Push#Push">Push</a> msg <span>-&gt;</span> Cmd msg</div><div class="docs-comment"><div><p> Pushes a <code>Push</code> message to a particular socket address. The address has to be the same as with which you initalized the <code>Socket</code> in the <code>connect</code> subscription.</p>
+<pre><code><span class="hljs-title">payload</span> =
+    <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.object [(<span class="hljs-string">"msg"</span>, <span class="hljs-string">"Hello Phoenix"</span>)]
+
+<span class="hljs-title">message</span> =
+    <span class="hljs-type">Push</span>.init <span class="hljs-string">"room:lobby"</span> <span class="hljs-string">"new_msg"</span>
+        |&gt; <span class="hljs-type">Push</span>.withPayload payload
+
+<span class="hljs-title">push</span> <span class="hljs-string">"ws://localhost:4000/socket/websocket"</span> message
+</code></pre><p><strong>Note</strong>: The message will be queued until you successfully joined a channel to the topic of the message.</p>
+</div></div></div></div><div class="pkg-nav"><ul class="pkg-nav-value"><li><a class="pkg-nav-module" href="./index.html">Phoenix</a></li><li><a class="pkg-nav-module" href="./channel.html">Phoenix.Channel</a></li><li><a class="pkg-nav-module" href="./push.html">Phoenix.Push</a></li><li><a class="pkg-nav-module" href="./socket.html">Phoenix.Socket</a></li></ul></div></div></div><div class="footer">
+Design © 2012-2016 Evan Czaplicki</div></div></body></html>

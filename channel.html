@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<!-- saved from url=(0061)./channel.html -->
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link rel="shortcut icon" size="16x16, 32x32, 48x48, 64x64, 128x128, 256x256" href="http://package.elm-lang.org/assets/favicon.ico">
+    <title>Phoenix.Channels</title>
+    <link rel="stylesheet" href="./default.css">
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+    
+    <div class="center">
+        <div class="entry-list"><h1 class="entry-list-title">Phoenix.Channel</h1><span class="markdown-entry"><div><p> A channel declares which topic should be joined, registers event handlers and has various callbacks for possible lifecycle events.</p>
+<h1 id="definition">Definition</h1>
+</div></span><div class="docs-entry" id="Channel"><div class="docs-annotation"><span class="hljs-keyword">type</span> <span class="hljs-keyword">alias</span> <a href="http://package.elm-lang.org/help/docs-preview#Channel" style="font-weight: bold;">Channel</a> msg <span>=</span> 
+    PhoenixChannel msg</div><div class="docs-comment"><div><p> Representation of a Phoenix Channel</p>
+</div></div></div><span class="markdown-entry"><div><h1 id="helpers">Helpers</h1>
+</div></span><div class="docs-entry" id="init"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#init" style="font-weight: bold;">init</a> <span>:</span> String <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg</div><div class="docs-comment"><div><p> Initialize a channel to a given topic.</p>
+<pre><code><span class="hljs-title">init</span> <span class="hljs-string">"room:lobby"</span>
+</code></pre></div></div></div><div class="docs-entry" id="withPayload"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#withPayload" style="font-weight: bold;">withPayload</a> <span>:</span> Value <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg</div><div class="docs-comment"><div><p> Attach a payload to the join message. You can use this to submit e.g. a user id or authentication infos. This will be the second argument in your <code>join/3</code> callback on the server.</p>
+<pre><code><span class="hljs-title">payload</span> =
+    <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.object [(<span class="hljs-string">"user_id"</span>, <span class="hljs-string">"123"</span>)]
+
+<span class="hljs-title">init</span> <span class="hljs-string">"room:lobby"</span>
+    |&gt; withPayload payload
+</code></pre></div></div></div><div class="docs-entry" id="on"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#on" style="font-weight: bold;">on</a> <span>:</span> String <span>-&gt;</span> (Value <span>-&gt;</span> msg) <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg</div><div class="docs-comment"><div><p> Register an event handler for a event.</p>
+<pre><code><span class="hljs-typedef"><span class="hljs-keyword">type</span> <span class="hljs-type">Msg</span> = <span class="hljs-type">NewMsg</span> <span class="hljs-type">Value</span> | ...</span>
+
+<span class="hljs-title">init</span> <span class="hljs-string">"roomy:lobby"</span>
+    |&gt; on <span class="hljs-string">"new_msg"</span> <span class="hljs-type">NewMsg</span>
+</code></pre></div></div></div><div class="docs-entry" id="onJoin"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#onJoin" style="font-weight: bold;">onJoin</a> <span>:</span> (Value <span>-&gt;</span> msg) <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg</div><div class="docs-comment"><div><p> Set a callback which will be called after you sucessfully joined the channel. It will also be called after you rejoined the channel after a disconnect unless you specified an <code>onRejoin</code> handler.</p>
+<pre><code><span class="hljs-typedef"><span class="hljs-keyword">type</span> <span class="hljs-type">Msg</span> =</span>
+    <span class="hljs-type">IsOnline</span> <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.<span class="hljs-type">Value</span> | ...
+
+<span class="hljs-title">init</span> <span class="hljs-string">"room:lobby"</span>
+    |&gt; onJoin <span class="hljs-type">IsOnline</span>
+</code></pre></div></div></div><div class="docs-entry" id="onJoinError"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#onJoinError" style="font-weight: bold;">onJoinError</a> <span>:</span> (Value <span>-&gt;</span> msg) <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg</div><div class="docs-comment"><div><p> Set a callback which will be called if the server declined your request to join the channel.</p>
+<pre><code><span class="hljs-typedef"><span class="hljs-keyword">type</span> <span class="hljs-type">Msg</span> =</span>
+    <span class="hljs-type">CouldNotJoin</span> <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.<span class="hljs-type">Value</span> | ...
+
+<span class="hljs-title">init</span> <span class="hljs-string">"room:lobby"</span>
+    |&gt; onJoinError <span class="hljs-type">CouldNotJoin</span>
+</code></pre><p><strong>Note</strong>: If a channel declined a request to join a topic the effect manager won_t try again.</p>
+</div></div></div><div class="docs-entry" id="onError"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#onError" style="font-weight: bold;">onError</a> <span>:</span> msg <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg</div><div class="docs-comment"><div><p> Set a callback which will be called if the channel process on the server crashed. The effect manager will automatically rejoin the channel after a crash.</p>
+<pre><code><span class="hljs-typedef"><span class="hljs-keyword">type</span> <span class="hljs-type">Msg</span> =</span>
+     <span class="hljs-type">ChannelCrashed</span> | ...
+
+<span class="hljs-title">init</span> <span class="hljs-string">"room:lobby"</span>
+    |&gt; onError <span class="hljs-type">ChannelCrashed</span>
+</code></pre></div></div></div><div class="docs-entry" id="onDisconnect"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#onDisconnect" style="font-weight: bold;">onDisconnect</a> <span>:</span> msg <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg</div><div class="docs-comment"><div><p> Set a callback which will be called if the socket connection got interrupted. Useful to switch the online status to offline.</p>
+<pre><code><span class="hljs-typedef"><span class="hljs-keyword">type</span> <span class="hljs-type">Msg</span> =</span>
+    <span class="hljs-type">IsOffline</span> | ...
+
+<span class="hljs-title">init</span> <span class="hljs-string">"room:lobby"</span>
+    |&gt; onDisconnect <span class="hljs-type">IsOffline</span>
+</code></pre><p><strong>Note</strong>: The effect manager will automatically try to reconnect to the server and to rejoin the channel. See <code>onRejoin</code> for details.</p>
+</div></div></div><div class="docs-entry" id="onRejoin"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#onRejoin" style="font-weight: bold;">onRejoin</a> <span>:</span> (Value <span>-&gt;</span> msg) <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg</div><div class="docs-comment"><div><p> Set a callback which will be called after you sucessfully rejoined the channel after a disconnect. Useful if you want to catch up missed messages.</p>
+<pre><code><span class="hljs-typedef"><span class="hljs-keyword">type</span> <span class="hljs-type">Msg</span> =</span>
+    <span class="hljs-type">IsOnline</span> <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.<span class="hljs-type">Value</span> | ...
+
+<span class="hljs-title">init</span> <span class="hljs-string">"room:lobby"</span>
+    |&gt; onRejoin <span class="hljs-type">IsOnline</span>
+</code></pre></div></div></div><div class="docs-entry" id="onLeave"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#onLeave" style="font-weight: bold;">onLeave</a> <span>:</span> (Value <span>-&gt;</span> msg) <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg</div><div class="docs-comment"><div><p> Set a callback which will be called after you sucessfully left a channel.</p>
+<pre><code><span class="hljs-typedef"><span class="hljs-keyword">type</span> <span class="hljs-type">Msg</span> =</span>
+    <span class="hljs-type">LeftLobby</span> <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.<span class="hljs-type">Value</span> | ...
+
+<span class="hljs-title">init</span> <span class="hljs-string">"room:lobby"</span>
+    |&gt; onLeave <span class="hljs-type">LeftLobby</span>
+</code></pre></div></div></div><div class="docs-entry" id="onLeaveError"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#onLeaveError" style="font-weight: bold;">onLeaveError</a> <span>:</span> (Value <span>-&gt;</span> msg) <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg</div><div class="docs-comment"><div><p> Set a callback which will be called if the server declined your request to left a channel.
+<em>(It seems that Phoenix v1.2 doesn_t send this)</em></p>
+</div></div></div><div class="docs-entry" id="withDebug"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#withDebug" style="font-weight: bold;">withDebug</a> <span>:</span> <a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Channel#Channel">Channel</a> msg</div><div class="docs-comment"><div><p> Print all status changes.</p>
+</div></div></div></div><div class="pkg-nav"><ul class="pkg-nav-value"><li><a class="pkg-nav-module" href="./index.html">Phoenix</a></li><li><a class="pkg-nav-module" href="./channel.html">Phoenix.Channel</a></li><li><a class="pkg-nav-module" href="./push.html">Phoenix.Push</a></li><li><a class="pkg-nav-module" href="./socket.html">Phoenix.Socket</a></li></ul></div></div></div><div class="footer">
+Design © 2012-2016 Evan Czaplicki</div></div></body></html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<!-- saved from url=(0060)./socket.html -->
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link rel="shortcut icon" size="16x16, 32x32, 48x48, 64x64, 128x128, 256x256" href="http://package.elm-lang.org/assets/favicon.ico">
+    <title>Phoenix.Socket</title>
+    <link rel="stylesheet" href="./default.css">
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+    
+    <div class="center">
+       <div class="entry-list"><h1 class="entry-list-title">Phoenix.Socket</h1><span class="markdown-entry"><div><p> A socket declares to which endpoint a socket connection should be established.</p>
+<h1 id="definition">Definition</h1>
+</div></span><div class="docs-entry" id="Socket"><div class="docs-annotation"><span class="hljs-keyword">type</span> <span class="hljs-keyword">alias</span> <a href="http://package.elm-lang.org/help/docs-preview#Socket" style="font-weight: bold;">Socket</a> <span>=</span> 
+    PhoenixSocket</div><div class="docs-comment"><div><p> Representation of a Socket connection</p>
+</div></div></div><span class="markdown-entry"><div><h1 id="helpers">Helpers</h1>
+</div></span><div class="docs-entry" id="init"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#init" style="font-weight: bold;">init</a> <span>:</span> String <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Socket#Socket">Socket</a></div><div class="docs-comment"><div><p> Initialize a Socket connection with an endpoint.</p>
+<pre><code><span class="hljs-title">init</span> <span class="hljs-string">"ws://localhost:4000/socket/websocket"</span>
+</code></pre></div></div></div><div class="docs-entry" id="withParams"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#withParams" style="font-weight: bold;">withParams</a> <span>:</span> List (String, String) <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Socket#Socket">Socket</a> <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Socket#Socket">Socket</a></div><div class="docs-comment"><div><p> Attach parameters to the socket connecton. You can use this to do authentication on the socket level. This will be the first argument (as a map) in your <code>connect/2</code> callback on the server.</p>
+<pre><code><span class="hljs-title">init</span> <span class="hljs-string">"ws://localhost:4000/socket/websocket"</span>
+    |&gt; withParams [(<span class="hljs-string">"token"</span>, <span class="hljs-string">"GYMXZwXzKFzfxyGntVkYt7uAJnscVnFJ"</span>)]
+</code></pre></div></div></div><div class="docs-entry" id="heartbeatIntervallSeconds"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#heartbeatIntervallSeconds" style="font-weight: bold;">heartbeatIntervallSeconds</a> <span>:</span> Int <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Socket#Socket">Socket</a> <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Socket#Socket">Socket</a></div><div class="docs-comment"><div><p> The client regularly sends a heartbeat to the server. With this function you can specify the intervall in which the heartbeats are send. By default it_s 30 seconds.</p>
+<pre><code><span class="hljs-title">init</span> <span class="hljs-string">"ws://localhost:4000/socket/websocket"</span>
+    |&gt; heartbeatIntervallSeconds <span class="hljs-number">60</span>
+</code></pre></div></div></div><div class="docs-entry" id="withoutHeartbeat"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#withoutHeartbeat" style="font-weight: bold;">withoutHeartbeat</a> <span>:</span> <a href="http://package.elm-lang.org/help/Phoenix-Socket#Socket">Socket</a> <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Socket#Socket">Socket</a></div><div class="docs-comment"><div><p> The client regularly sends a heartbeat to the sever. With this function you can disable the heartbeat.</p>
+<pre><code><span class="hljs-title">init</span> <span class="hljs-string">"ws://localhost:4000/socket/websocket"</span>
+    |&gt; withoutHeartbeat
+</code></pre></div></div></div><div class="docs-entry" id="reconnectTimer"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#reconnectTimer" style="font-weight: bold;">reconnectTimer</a> <span>:</span> (Int <span>-&gt;</span> Time) <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Socket#Socket">Socket</a> <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Socket#Socket">Socket</a></div><div class="docs-comment"><div><p> The effect manager will try to establish a socket connection. If it fails it will try again with a specified backoff. By default the effect manager will use the following exponential backoff strategy:</p>
+<pre><code><span class="hljs-title">defaultReconnectTimer</span> failedAttempts =
+    <span class="hljs-keyword">if</span> backoff &lt; <span class="hljs-number">1</span> <span class="hljs-keyword">then</span>
+        <span class="hljs-number">0</span>
+    <span class="hljs-keyword">else</span>
+        toFloat (<span class="hljs-number">10</span> * <span class="hljs-number">2</span> ^ failedAttempts)
+</code></pre><p>With this function you can specify a custom strategy.</p>
+</div></div></div><div class="docs-entry" id="withDebug"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#withDebug" style="font-weight: bold;">withDebug</a> <span>:</span> <a href="http://package.elm-lang.org/help/Phoenix-Socket#Socket">Socket</a> <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Socket#Socket">Socket</a></div><div class="docs-comment"><div><p> Enable debug logs for the socket. Every incoming and outgoing message will be printed.</p>
+</div></div></div></div><div class="pkg-nav"><ul class="pkg-nav-value"><li><a class="pkg-nav-module" href="./index.html">Phoenix</a></li><li><a class="pkg-nav-module" href="./channel.html">Phoenix.Channel</a></li><li><a class="pkg-nav-module" href="./push.html">Phoenix.Push</a></li><li><a class="pkg-nav-module" href="./socket.html">Phoenix.Socket</a></li></ul></div></div></div><div class="footer">
+Design © 2012-2016 Evan Czaplicki</div></div></body></html>

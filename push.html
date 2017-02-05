@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<!-- saved from url=(0058)./push.html -->
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link rel="shortcut icon" size="16x16, 32x32, 48x48, 64x64, 128x128, 256x256" href="http://package.elm-lang.org/assets/favicon.ico">
+    <title>Phoenix.Push</title>
+    <link rel="stylesheet" href="./default.css">
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>    
+    <div class="center">
+    
+
+    
+    <div class="entry-list"><h1 class="entry-list-title">Phoenix.Push</h1><span class="markdown-entry"><div><p> A message to push informations to a channel.</p>
+<h1 id="definition">Definition</h1>
+</div></span><div class="docs-entry" id="Push"><div class="docs-annotation"><span class="hljs-keyword">type</span> <span class="hljs-keyword">alias</span> <a href="http://package.elm-lang.org/help/docs-preview#Push" style="font-weight: bold;">Push</a> msg <span>=</span> 
+    { topic <span>:</span> String
+    , event <span>:</span> String
+    , payload <span>:</span> Value
+    , onOk <span>:</span> Maybe (Value <span>-&gt;</span> msg)
+    , onError <span>:</span> Maybe (Value <span>-&gt;</span> msg)
+    }</div><div class="docs-comment"><div><p> The message abstraction</p>
+<p><strong>Note</strong>: You should use the helper functions to construct a Push message.</p>
+</div></div></div><span class="markdown-entry"><div><h1 id="helpers">Helpers</h1>
+</div></span><div class="docs-entry" id="init"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#init" style="font-weight: bold;">init</a> <span>:</span> Topic <span>-&gt;</span> Event <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Push#Push">Push</a> msg</div><div class="docs-comment"><div><p> Initialize a message with a topic and an event.</p>
+<pre><code><span class="hljs-title">init</span> <span class="hljs-string">"room:lobby"</span> <span class="hljs-string">"new_msg"</span>
+</code></pre></div></div></div><div class="docs-entry" id="withPayload"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#withPayload" style="font-weight: bold;">withPayload</a> <span>:</span> Value <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Push#Push">Push</a> msg <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Push#Push">Push</a> msg</div><div class="docs-comment"><div><p> Attach a payload to a message</p>
+<pre><code><span class="hljs-title">payload</span> =
+    <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.object [(<span class="hljs-string">"msg"</span>, <span class="hljs-string">"Hello Phoenix"</span>)]
+
+<span class="hljs-title">init</span> <span class="hljs-string">"room:lobby"</span> <span class="hljs-string">"new_msg"</span>
+    |&gt; withPayload
+</code></pre></div></div></div><div class="docs-entry" id="onOk"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#onOk" style="font-weight: bold;">onOk</a> <span>:</span> (Value <span>-&gt;</span> msg) <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Push#Push">Push</a> msg <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Push#Push">Push</a> msg</div><div class="docs-comment"><div><p> Callback if the server replies with an "ok" status.</p>
+<pre><code><span class="hljs-typedef"><span class="hljs-keyword">type</span> <span class="hljs-type">Msg</span> = <span class="hljs-type">MessageArrived</span> | ...</span>
+
+<span class="hljs-title">payload</span> =
+    <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.object [(<span class="hljs-string">"msg"</span>, <span class="hljs-string">"Hello Phoenix"</span>)]
+
+<span class="hljs-title">init</span> <span class="hljs-string">"room:lobby"</span> <span class="hljs-string">"new_msg"</span>
+    |&gt; withPayload
+    |&gt; onOk (\_ -&gt; <span class="hljs-type">MessageArrived</span>)
+</code></pre></div></div></div><div class="docs-entry" id="onError"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#onError" style="font-weight: bold;">onError</a> <span>:</span> (Value <span>-&gt;</span> msg) <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Push#Push">Push</a> msg <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Push#Push">Push</a> msg</div><div class="docs-comment"><div><p> Callback if the server replies with an "error" status.</p>
+<pre><code><span class="hljs-typedef"><span class="hljs-keyword">type</span> <span class="hljs-type">Msg</span> = <span class="hljs-type">MessageFailed</span> <span class="hljs-type">Value</span> | ...</span>
+
+<span class="hljs-title">payload</span> =
+    <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.object [(<span class="hljs-string">"msg"</span>, <span class="hljs-string">"Hello Phoenix"</span>)]
+
+<span class="hljs-title">init</span> <span class="hljs-string">"room:lobby"</span> <span class="hljs-string">"new_msg"</span>
+    |&gt; withPayload
+    |&gt; onError <span class="hljs-type">MessageFailed</span>
+</code></pre></div></div></div><div class="docs-entry" id="map"><div class="docs-annotation"><a href="http://package.elm-lang.org/help/docs-preview#map" style="font-weight: bold;">map</a> <span>:</span> (a <span>-&gt;</span> b) <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Push#Push">Push</a> a <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Push#Push">Push</a> b</div><div class="docs-comment"><div><p> Applies the function on the onOk and onError callback</p>
+</div></div></div></div><div class="pkg-nav"><ul class="pkg-nav-value"><li><a class="pkg-nav-module" href="./index.html">Phoenix</a></li><li><a class="pkg-nav-module" href="./channel.html">Phoenix.Channel</a></li><li><a class="pkg-nav-module" href="./push.html">Phoenix.Push</a></li><li><a class="pkg-nav-module" href="./socket.html">Phoenix.Socket</a></li></ul></div></div></div><div class="footer">
+Design © 2012-2016 Evan Czaplicki</div></div></body></html>
