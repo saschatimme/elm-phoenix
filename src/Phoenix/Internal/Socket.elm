@@ -52,15 +52,6 @@ isOpening internalSocket =
 -- MODIFY
 
 
-socketMap : (a -> b) -> Socket.Socket a -> Socket.Socket b
-socketMap func socket =
-    { socket
-        | onClose = Maybe.map ((<<) func) socket.onClose
-        , onNormalClose = Maybe.map func socket.onNormalClose
-        , onAbnormalClose = Maybe.map func socket.onAbnormalClose
-    }
-
-
 opening : Int -> Process.Id -> InternalSocket msg -> InternalSocket msg
 opening backoff pid socket =
     { socket | connection = (Opening backoff pid) }

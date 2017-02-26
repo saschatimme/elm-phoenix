@@ -35,28 +35,7 @@ type alias Event =
 
 map : (a -> b) -> InternalChannel a -> InternalChannel b
 map func { state, channel } =
-    InternalChannel state (channelMap func channel)
-
-
-channelMap : (a -> b) -> Channel.Channel a -> Channel.Channel b
-channelMap func chan =
-    let
-        f =
-            Maybe.map ((<<) func)
-
-        channel =
-            { chan
-                | onJoin = f chan.onJoin
-                , onJoinError = f chan.onJoinError
-                , onError = Maybe.map func chan.onError
-                , onDisconnect = Maybe.map func chan.onDisconnect
-                , onRejoin = f chan.onRejoin
-                , onLeave = f chan.onLeave
-                , onLeaveError = f chan.onLeaveError
-                , on = Dict.map (\_ a -> func << a) chan.on
-            }
-    in
-        channel
+    InternalChannel state (Channel.map func channel)
 
 
 joinMessage : InternalChannel msg -> Message

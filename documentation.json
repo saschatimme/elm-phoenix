@@ -8,7 +8,7 @@
       {
         "name": "connect",
         "comment": " Declare a socket you want to connect to and the channels you want to join. The effect manager will open the socket connection, join the channels. See `Phoenix.Socket` and `Phoenix.Channel` for more configuration and behaviour details.\n\n    import Phoenix.Socket as Socket\n    import Phoenix.Channel as Channel\n\n    type Msg = NewMsg Value | ...\n\n    socket =\n        Socket.init \"ws://localhost:4000/socket/websocket\"\n\n    channel =\n        Channel.init \"room:lobby\"\n            -- register a handler for messages\n            -- with a \"new_msg\" event\n            |> Channel.on \"new_msg\" NewMsg\n\n    subscriptions model =\n        connect socket [channel]\n\n**Note**: An empty channel list keeps the socket connection open.\n",
-        "type": "Phoenix.Socket.Socket -> List (Phoenix.Channel.Channel msg) -> Platform.Sub.Sub msg"
+        "type": "Phoenix.Socket.Socket msg -> List (Phoenix.Channel.Channel msg) -> Platform.Sub.Sub msg"
       },
       {
         "name": "push",
@@ -20,13 +20,15 @@
   },
   {
     "name": "Phoenix.Socket",
-    "comment": " A socket declares to which endpoint a socket connection should be established.\n\n# Definition\n@docs Socket\n\n# Helpers\n@docs init, withParams, heartbeatIntervallSeconds, withoutHeartbeat, reconnectTimer, withDebug\n",
+    "comment": " A socket declares to which endpoint a socket connection should be established.\n\n# Definition\n@docs Socket\n\n# Helpers\n@docs init, withParams, heartbeatIntervallSeconds, withoutHeartbeat, reconnectTimer, withDebug, onAbnormalClose, onNormalClose, onClose, map\n",
     "aliases": [
       {
         "name": "Socket",
         "comment": " Representation of a Socket connection\n",
-        "args": [],
-        "type": "Phoenix.Socket.PhoenixSocket"
+        "args": [
+          "msg"
+        ],
+        "type": "Phoenix.Socket.PhoenixSocket msg"
       }
     ],
     "types": [],
@@ -34,39 +36,102 @@
       {
         "name": "heartbeatIntervallSeconds",
         "comment": " The client regularly sends a heartbeat to the server. With this function you can specify the intervall in which the heartbeats are send. By default it_s 30 seconds.\n\n    init \"ws://localhost:4000/socket/websocket\"\n        |> heartbeatIntervallSeconds 60\n",
-        "type": "Int -> Phoenix.Socket.Socket -> Phoenix.Socket.Socket"
+        "type": "Int -> Phoenix.Socket.Socket msg -> Phoenix.Socket.Socket msg"
       },
       {
         "name": "init",
         "comment": " Initialize a Socket connection with an endpoint.\n\n    init \"ws://localhost:4000/socket/websocket\"\n",
-        "type": "String -> Phoenix.Socket.Socket"
+        "type": "String -> Phoenix.Socket.Socket msg"
+      },
+      {
+        "name": "map",
+        "comment": " Composes each callback with the function `a -> b`.\n",
+        "type": "(a -> b) -> Phoenix.Socket.Socket a -> Phoenix.Socket.Socket b"
+      },
+      {
+        "name": "onAbnormalClose",
+        "comment": " Set a callback which will be called if the socket connection got closed abnormal, i.e., if the server declined the socket authentication. So this callback is useful for updating query params like access tokens.\n\n    type Msg =\n        RefreshAccessToken | ...\n\n        init \"ws://localhost:4000/socket/websocket\"\n            |> withParams [ ( \"accessToken\", \"abc123\" ) ]\n            |> onAbnormalClose RefreshAccessToken\n",
+        "type": "msg -> Phoenix.Socket.Socket msg -> Phoenix.Socket.Socket msg"
+      },
+      {
+        "name": "onClose",
+        "comment": " Set a callback which will be called if the socket connection got closed. You can learn more about the code [here](https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent).\n",
+        "type": "({ code : Int, reason : String, wasClean : Bool } -> msg) -> Phoenix.Socket.Socket msg -> Phoenix.Socket.Socket msg"
+      },
+      {
+        "name": "onNormalClose",
+        "comment": " Set a callback which will be called if the socket connection got closed normal. Useful if you have to do some additional clean up.\n",
+        "type": "msg -> Phoenix.Socket.Socket msg -> Phoenix.Socket.Socket msg"
       },
       {
         "name": "reconnectTimer",
         "comment": " The effect manager will try to establish a socket connection. If it fails it will try again with a specified backoff. By default the effect manager will use the following exponential backoff strategy:\n\n    defaultReconnectTimer failedAttempts =\n        if backoff < 1 then\n            0\n        else\n            toFloat (10 * 2 ^ failedAttempts)\n\nWith this function you can specify a custom strategy.\n",
-        "type": "(Int -> Time.Time) -> Phoenix.Socket.Socket -> Phoenix.Socket.Socket"
+        "type": "(Int -> Time.Time) -> Phoenix.Socket.Socket msg -> Phoenix.Socket.Socket msg"
       },
       {
         "name": "withDebug",
         "comment": " Enable debug logs for the socket. Every incoming and outgoing message will be printed.\n",
-        "type": "Phoenix.Socket.Socket -> Phoenix.Socket.Socket"
+        "type": "Phoenix.Socket.Socket msg -> Phoenix.Socket.Socket msg"
       },
       {
         "name": "withParams",
         "comment": " Attach parameters to the socket connecton. You can use this to do authentication on the socket level. This will be the first argument (as a map) in your `connect/2` callback on the server.\n\n    init \"ws://localhost:4000/socket/websocket\"\n        |> withParams [(\"token\", \"GYMXZwXzKFzfxyGntVkYt7uAJnscVnFJ\")]\n",
-        "type": "List ( String, String ) -> Phoenix.Socket.Socket -> Phoenix.Socket.Socket"
+        "type": "List ( String, String ) -> Phoenix.Socket.Socket msg -> Phoenix.Socket.Socket msg"
       },
       {
         "name": "withoutHeartbeat",
         "comment": " The client regularly sends a heartbeat to the sever. With this function you can disable the heartbeat.\n\n    init \"ws://localhost:4000/socket/websocket\"\n        |> withoutHeartbeat\n",
-        "type": "Phoenix.Socket.Socket -> Phoenix.Socket.Socket"
+        "type": "Phoenix.Socket.Socket msg -> Phoenix.Socket.Socket msg"
+      }
+    ],
+    "generated-with-elm-version": "0.18.0"
+  },
+  {
+    "name": "Phoenix.Push",
+    "comment": " A message to push informations to a channel.\n\n# Definition\n@docs Push\n\n# Helpers\n@docs init, withPayload, onOk, onError, map\n",
+    "aliases": [
+      {
+        "name": "Push",
+        "comment": " The message abstraction\n",
+        "args": [
+          "msg"
+        ],
+        "type": "Phoenix.Push.PhoenixPush msg"
+      }
+    ],
+    "types": [],
+    "values": [
+      {
+        "name": "init",
+        "comment": " Initialize a message with a topic and an event.\n\n    init \"room:lobby\" \"new_msg\"\n",
+        "type": "Phoenix.Push.Topic -> Phoenix.Push.Event -> Phoenix.Push.Push msg"
+      },
+      {
+        "name": "map",
+        "comment": " Applies the function on the onOk and onError callback\n",
+        "type": "(a -> b) -> Phoenix.Push.Push a -> Phoenix.Push.Push b"
+      },
+      {
+        "name": "onError",
+        "comment": " Callback if the server replies with an \"error\" status.\n\n    type Msg = MessageFailed Value | ...\n\n    payload =\n        Json.Encode.object [(\"msg\", \"Hello Phoenix\")]\n\n    init \"room:lobby\" \"new_msg\"\n        |> withPayload\n        |> onError MessageFailed\n",
+        "type": "(Json.Encode.Value -> msg) -> Phoenix.Push.Push msg -> Phoenix.Push.Push msg"
+      },
+      {
+        "name": "onOk",
+        "comment": " Callback if the server replies with an \"ok\" status.\n\n    type Msg = MessageArrived | ...\n\n    payload =\n        Json.Encode.object [(\"msg\", \"Hello Phoenix\")]\n\n    init \"room:lobby\" \"new_msg\"\n        |> withPayload\n        |> onOk (\\_ -> MessageArrived)\n",
+        "type": "(Json.Encode.Value -> msg) -> Phoenix.Push.Push msg -> Phoenix.Push.Push msg"
+      },
+      {
+        "name": "withPayload",
+        "comment": " Attach a payload to a message\n\n    payload =\n        Json.Encode.object [(\"msg\", \"Hello Phoenix\")]\n\n    init \"room:lobby\" \"new_msg\"\n        |> withPayload\n",
+        "type": "Json.Encode.Value -> Phoenix.Push.Push msg -> Phoenix.Push.Push msg"
       }
     ],
     "generated-with-elm-version": "0.18.0"
   },
   {
     "name": "Phoenix.Channel",
-    "comment": " A channel declares which topic should be joined, registers event handlers and has various callbacks for possible lifecycle events.\n\n# Definition\n@docs Channel\n\n# Helpers\n@docs init, withPayload, on, onJoin, onJoinError, onError, onDisconnect, onRejoin, onLeave, onLeaveError, withDebug\n\n",
+    "comment": " A channel declares which topic should be joined, registers event handlers and has various callbacks for possible lifecycle events.\n\n# Definition\n@docs Channel\n\n# Helpers\n@docs init, withPayload, on, onJoin, onJoinError, onError, onDisconnect, onRejoin, onLeave, onLeaveError, withDebug, map\n\n",
     "aliases": [
       {
         "name": "Channel",
@@ -83,6 +148,11 @@
         "name": "init",
         "comment": " Initialize a channel to a given topic.\n\n    init \"room:lobby\"\n",
         "type": "String -> Phoenix.Channel.Channel msg"
+      },
+      {
+        "name": "map",
+        "comment": " Composes each callback with the function `a -> b`.\n",
+        "type": "(a -> b) -> Phoenix.Channel.Channel a -> Phoenix.Channel.Channel b"
       },
       {
         "name": "on",
@@ -133,49 +203,6 @@
         "name": "withPayload",
         "comment": " Attach a payload to the join message. You can use this to submit e.g. a user id or authentication infos. This will be the second argument in your `join/3` callback on the server.\n\n    payload =\n        Json.Encode.object [(\"user_id\", \"123\")]\n\n    init \"room:lobby\"\n        |> withPayload payload\n",
         "type": "Json.Decode.Value -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
-      }
-    ],
-    "generated-with-elm-version": "0.18.0"
-  },
-  {
-    "name": "Phoenix.Push",
-    "comment": " A message to push informations to a channel.\n\n# Definition\n@docs Push\n\n# Helpers\n@docs init, withPayload, onOk, onError, map\n",
-    "aliases": [
-      {
-        "name": "Push",
-        "comment": " The message abstraction\n\n**Note**: You should use the helper functions to construct a Push message.\n",
-        "args": [
-          "msg"
-        ],
-        "type": "{ topic : String , event : String , payload : Json.Encode.Value , onOk : Maybe.Maybe (Json.Encode.Value -> msg) , onError : Maybe.Maybe (Json.Encode.Value -> msg) }"
-      }
-    ],
-    "types": [],
-    "values": [
-      {
-        "name": "init",
-        "comment": " Initialize a message with a topic and an event.\n\n    init \"room:lobby\" \"new_msg\"\n",
-        "type": "Phoenix.Push.Topic -> Phoenix.Push.Event -> Phoenix.Push.Push msg"
-      },
-      {
-        "name": "map",
-        "comment": " Applies the function on the onOk and onError callback\n",
-        "type": "(a -> b) -> Phoenix.Push.Push a -> Phoenix.Push.Push b"
-      },
-      {
-        "name": "onError",
-        "comment": " Callback if the server replies with an \"error\" status.\n\n    type Msg = MessageFailed Value | ...\n\n    payload =\n        Json.Encode.object [(\"msg\", \"Hello Phoenix\")]\n\n    init \"room:lobby\" \"new_msg\"\n        |> withPayload\n        |> onError MessageFailed\n",
-        "type": "(Json.Encode.Value -> msg) -> Phoenix.Push.Push msg -> Phoenix.Push.Push msg"
-      },
-      {
-        "name": "onOk",
-        "comment": " Callback if the server replies with an \"ok\" status.\n\n    type Msg = MessageArrived | ...\n\n    payload =\n        Json.Encode.object [(\"msg\", \"Hello Phoenix\")]\n\n    init \"room:lobby\" \"new_msg\"\n        |> withPayload\n        |> onOk (\\_ -> MessageArrived)\n",
-        "type": "(Json.Encode.Value -> msg) -> Phoenix.Push.Push msg -> Phoenix.Push.Push msg"
-      },
-      {
-        "name": "withPayload",
-        "comment": " Attach a payload to a message\n\n    payload =\n        Json.Encode.object [(\"msg\", \"Hello Phoenix\")]\n\n    init \"room:lobby\" \"new_msg\"\n        |> withPayload\n",
-        "type": "Json.Encode.Value -> Phoenix.Push.Push msg -> Phoenix.Push.Push msg"
       }
     ],
     "generated-with-elm-version": "0.18.0"

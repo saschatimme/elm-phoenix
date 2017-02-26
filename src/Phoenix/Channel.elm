@@ -1,4 +1,4 @@
-module Phoenix.Channel exposing (Channel, init, withPayload, onJoin, onRejoin, onJoinError, onError, onDisconnect, on, onLeave, onLeaveError, withDebug)
+module Phoenix.Channel exposing (Channel, init, withPayload, onJoin, onRejoin, onJoinError, onError, onDisconnect, on, onLeave, onLeaveError, withDebug, map)
 
 {-| A channel declares which topic should be joined, registers event handlers and has various callbacks for possible lifecycle events.
 
@@ -6,7 +6,7 @@ module Phoenix.Channel exposing (Channel, init, withPayload, onJoin, onRejoin, o
 @docs Channel
 
 # Helpers
-@docs init, withPayload, on, onJoin, onJoinError, onError, onDisconnect, onRejoin, onLeave, onLeaveError, withDebug
+@docs init, withPayload, on, onJoin, onJoinError, onError, onDisconnect, onRejoin, onLeave, onLeaveError, withDebug, map
 
 -}
 
@@ -176,6 +176,29 @@ onLeave onLeave_ chan =
 onLeaveError : (Value -> msg) -> Channel msg -> Channel msg
 onLeaveError onLeaveError_ chan =
     { chan | onLeaveError = Just onLeaveError_ }
+
+
+{-| Composes each callback with the function `a -> b`.
+-}
+map : (a -> b) -> Channel a -> Channel b
+map func chan =
+    let
+        f =
+            Maybe.map ((<<) func)
+
+        channel =
+            { chan
+                | onJoin = f chan.onJoin
+                , onJoinError = f chan.onJoinError
+                , onError = Maybe.map func chan.onError
+                , onDisconnect = Maybe.map func chan.onDisconnect
+                , onRejoin = f chan.onRejoin
+                , onLeave = f chan.onLeave
+                , onLeaveError = f chan.onLeaveError
+                , on = Dict.map (\_ a -> func << a) chan.on
+            }
+    in
+        channel
 
 
 {-| Print all status changes.

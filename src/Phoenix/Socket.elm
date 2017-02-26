@@ -1,4 +1,4 @@
-module Phoenix.Socket exposing (Socket, init, heartbeatIntervallSeconds, withoutHeartbeat, reconnectTimer, withParams, withDebug, onClose, onAbnormalClose, onNormalClose)
+module Phoenix.Socket exposing (Socket, init, heartbeatIntervallSeconds, withoutHeartbeat, reconnectTimer, withParams, withDebug, onClose, onAbnormalClose, onNormalClose, map)
 
 {-| A socket declares to which endpoint a socket connection should be established.
 
@@ -6,7 +6,7 @@ module Phoenix.Socket exposing (Socket, init, heartbeatIntervallSeconds, without
 @docs Socket
 
 # Helpers
-@docs init, withParams, heartbeatIntervallSeconds, withoutHeartbeat, reconnectTimer, withDebug, onAbnormalClose, onNormalClose, onClose
+@docs init, withParams, heartbeatIntervallSeconds, withoutHeartbeat, reconnectTimer, withDebug, onAbnormalClose, onNormalClose, onClose, map
 -}
 
 import Time exposing (Time)
@@ -135,3 +135,14 @@ defaultReconnectTimer failedAttempts =
         0
     else
         toFloat (10 * 2 ^ failedAttempts)
+
+
+{-| Composes each callback with the function `a -> b`.
+-}
+map : (a -> b) -> Socket a -> Socket b
+map func socket =
+    { socket
+        | onClose = Maybe.map ((<<) func) socket.onClose
+        , onNormalClose = Maybe.map func socket.onNormalClose
+        , onAbnormalClose = Maybe.map func socket.onAbnormalClose
+    }

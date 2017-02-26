@@ -102,8 +102,8 @@ subMap func sub =
     case sub of
         Connect socket channels ->
             Connect
-                (socket |> InternalSocket.socketMap func)
-                (channels |> List.map (InternalChannel.channelMap func))
+                (socket |> Socket.map func)
+                (channels |> List.map (Channel.map func))
 
 
 type alias Message =
