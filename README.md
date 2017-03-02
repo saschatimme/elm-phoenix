@@ -43,6 +43,8 @@ Since this package is an [effect manager](https://guide.elm-lang.org/effect_mana
 ```
 and install the package with `elm-github-install`.
 
+**Please note:** Depending on your setup the example Phoenix app in this repo can cause errors. One solution would be to simply delete the `example` folder. See [this issue](https://github.com/saschatimme/elm-phoenix/issues/7) for more details.
+
 The last compatible version with Elm 0.17 is `0.1.0`.
 
 ## Documentation
