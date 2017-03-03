@@ -31,14 +31,16 @@ defmodule ElmPhoenix.RoomChannel do
   end
 
   def leave(_reason, socket) do
-    OnlineUsers.left (socket.assigns["user_name"])
+    OnlineUsers.left (socket.assigns[:user_name])
 
-    {:ok, socket}
+    :ok
   end
 
   def terminate(_reason, socket) do
-    OnlineUsers.left (socket.assigns["user_name"])
-    {:shutdown, :closed}
+    user_name = socket.assigns[:user_name]
+    OnlineUsers.left (user_name)
+    broadcast! socket, "user_left", %{user_name: user_name}
+    :ok
   end
 
   # def handle(msg, payload, socket) do

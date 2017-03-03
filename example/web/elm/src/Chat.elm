@@ -45,6 +45,7 @@ type State
 type Message
     = Message { userName : String, message : String }
     | UserJoined String
+    | UserLeft String
 
 
 initModel : Model
@@ -74,6 +75,7 @@ type Msg
     | UpdateComposedMessage String
     | NewMsg JD.Value
     | UserJoinedMsg JD.Value
+    | UserLeftMsg JD.Value
     | SendComposedMessage
     | RefreshAccessToken
 
@@ -117,6 +119,14 @@ update message model =
                 Err err ->
                     model ! []
 
+        UserLeftMsg payload ->
+            case JD.decodeValue decodeUserLeftMsg payload of
+                Ok msg ->
+                    { model | messages = List.append model.messages [ msg ] } ! []
+
+                Err err ->
+                    model ! []
+
         RefreshAccessToken ->
             { model | accessToken = model.accessToken + 1 } ! []
 
@@ -135,6 +145,12 @@ decodeNewMsg =
 decodeUserJoinedMsg : Decoder Message
 decodeUserJoinedMsg =
     JD.map UserJoined
+        (JD.field "user_name" JD.string)
+
+
+decodeUserLeftMsg : Decoder Message
+decodeUserLeftMsg =
+    JD.map UserLeft
         (JD.field "user_name" JD.string)
 
 
@@ -165,6 +181,7 @@ lobby userName =
         |> Channel.onLeave (\_ -> UpdateState LeftLobby)
         |> Channel.on "new_msg" NewMsg
         |> Channel.on "user_joined" UserJoinedMsg
+        |> Channel.on "user_left" UserLeftMsg
         |> Channel.withDebug
 
 
@@ -266,6 +283,12 @@ chatMessage msg =
             Html.div [ Attr.class "user-joined" ]
                 [ Html.span [ Attr.class "user-name" ] [ Html.text userName ]
                 , Html.text " joined (open another tab to join with another user)"
+                ]
+
+        UserLeft userName ->
+            Html.div [ Attr.class "user-joined" ]
+                [ Html.span [ Attr.class "user-name" ] [ Html.text userName ]
+                , Html.text " left "
                 ]
 
 
