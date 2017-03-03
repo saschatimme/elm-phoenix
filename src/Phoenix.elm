@@ -521,7 +521,9 @@ onSelfMsg router selfMsg state =
                         notifyOnAbnormalClose =
                             -- see https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent for error codes
                             if details.code == 1006 then
-                                Maybe.map (Platform.sendToApp router) socket.onAbnormalClose
+                                socket.onAbnormalClose
+                                    |> Maybe.map2 (|>) (Just { reconnectAttempt = backoffIteration, reconnectWait = backoff })
+                                    |> Maybe.map (Platform.sendToApp router)
                                     |> Maybe.withDefault (Task.succeed ())
                             else
                                 Task.succeed ()

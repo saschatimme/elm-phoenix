@@ -7,8 +7,9 @@ import Html.Attributes as Attr
 import Html.Events as Events
 import Phoenix
 import Phoenix.Channel as Channel exposing (Channel)
-import Phoenix.Socket as Socket exposing (Socket)
+import Phoenix.Socket as Socket exposing (Socket, AbnormalClose)
 import Phoenix.Push as Push
+import Time exposing (Time)
 
 
 main : Program Never Model Msg
@@ -33,12 +34,14 @@ type alias Model =
     , composedMessage : String
     , accessToken : Int
     , connectionStatus : ConnectionStatus
+    , currentTime : Time
     }
 
 
 type ConnectionStatus
     = Connected
     | Disconnected
+    | ScheduledReconnect { time : Time }
 
 
 type State
@@ -63,6 +66,7 @@ initModel =
     , composedMessage = ""
     , accessToken = 1
     , connectionStatus = Disconnected
+    , currentTime = 0
     }
 
 
@@ -84,8 +88,9 @@ type Msg
     | UserJoinedMsg JD.Value
     | UserLeftMsg JD.Value
     | SendComposedMessage
-    | SocketClosedAbnormally
+    | SocketClosedAbnormally AbnormalClose
     | ConnectionStatusChanged ConnectionStatus
+    | Tick Time
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -135,11 +140,26 @@ update message model =
                 Err err ->
                     model ! []
 
-        SocketClosedAbnormally ->
-            { model | accessToken = model.accessToken + 1 } ! []
+        SocketClosedAbnormally abnormalClose ->
+            { model
+                | accessToken = model.accessToken
+                , connectionStatus =
+                    ScheduledReconnect
+                        { time = roundDownToSecond (model.currentTime + abnormalClose.reconnectWait)
+                        }
+            }
+                ! []
 
         ConnectionStatusChanged connectionStatus ->
             { model | connectionStatus = connectionStatus } ! []
+
+        Tick time ->
+            { model | currentTime = time } ! []
+
+
+roundDownToSecond : Time -> Time
+roundDownToSecond ms =
+    (ms / 1000) |> truncate |> (*) 1000 |> toFloat
 
 
 
@@ -183,6 +203,7 @@ socket accessToken =
         |> Socket.onOpen (ConnectionStatusChanged Connected)
         |> Socket.onClose (\_ -> ConnectionStatusChanged Disconnected)
         |> Socket.onAbnormalClose SocketClosedAbnormally
+        |> Socket.reconnectTimer (\backoffIteration -> (backoffIteration + 1) * 5000 |> toFloat)
 
 
 lobby : String -> Channel Msg
@@ -200,6 +221,10 @@ lobby userName =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
+    Sub.batch [ phoenixSubscription model, Time.every Time.second Tick ]
+
+
+phoenixSubscription model =
     let
         connect =
             Phoenix.connect (socket model.accessToken)
@@ -227,6 +252,7 @@ view model =
         [ enterLeaveLobby model
         , chatMessages model.messages
         , composeMessage model
+        , statusMessage model
         ]
 
 
@@ -259,6 +285,26 @@ enterLeaveLobby model =
             , button model
             , Html.div [ Attr.class socketStatusClass ] []
             ]
+
+
+statusMessage : Model -> Html Msg
+statusMessage model =
+    case model.connectionStatus of
+        ScheduledReconnect { time } ->
+            let
+                remainingSeconds =
+                    truncate <| (time - model.currentTime) / 1000
+
+                reconnectStatus =
+                    if remainingSeconds <= 0 then
+                        "Reconnecting ..."
+                    else
+                        "Reconnecting in " ++ (toString remainingSeconds) ++ " seconds"
+            in
+                Html.div [ Attr.class "status-message" ] [ Html.text reconnectStatus ]
+
+        _ ->
+            Html.text ""
 
 
 button : Model -> Html Msg
