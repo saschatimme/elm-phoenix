@@ -77,12 +77,12 @@ type Msg
     | UserJoinedMsg JD.Value
     | UserLeftMsg JD.Value
     | SendComposedMessage
-    | RefreshAccessToken
+    | SocketClosedAbnormally
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
-    case message of
+    case Debug.log "update" message of
         UpdateUserName name ->
             { model | userName = name, userNameTaken = False } ! []
 
@@ -127,7 +127,7 @@ update message model =
                 Err err ->
                     model ! []
 
-        RefreshAccessToken ->
+        SocketClosedAbnormally ->
             { model | accessToken = model.accessToken + 1 } ! []
 
 
@@ -169,7 +169,7 @@ socket : Int -> Socket Msg
 socket accessToken =
     Socket.init lobbySocket
         |> Socket.withParams [ ( "accessToken", toString accessToken ) ]
-        |> Socket.onAbnormalClose RefreshAccessToken
+        |> Socket.onAbnormalClose SocketClosedAbnormally
 
 
 lobby : String -> Channel Msg

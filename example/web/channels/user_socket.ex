@@ -1,6 +1,7 @@
 defmodule ElmPhoenix.UserSocket do
   use Phoenix.Socket
   require Logger
+  require Integer
 
   ## Channels
   channel "room:*", ElmPhoenix.RoomChannel
@@ -22,7 +23,13 @@ defmodule ElmPhoenix.UserSocket do
   # performing token verification on connect.
   def connect(params, socket) do
     Logger.debug "Socket params: #{inspect params}"
-    {:ok, socket}
+    accessToken = String.to_integer params["accessToken"]
+
+    if Integer.is_odd accessToken do
+      {:ok, socket}
+    else
+     :error
+    end
   end
 
   # Socket id's are topics that allow you to identify all sockets for a given user:

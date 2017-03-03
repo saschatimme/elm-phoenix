@@ -502,27 +502,24 @@ onSelfMsg router selfMsg state =
                             Task.map (updateSocket endpoint (InternalSocket.opening backoffIteration pid internalSocket)) getNewState
 
                         notifyOnClose =
-                            if InternalSocket.isOpening internalSocket then
-                                Task.succeed ()
-                            else
-                                Maybe.map (\onClose -> Platform.sendToApp router (onClose details)) socket.onClose
-                                    |> Maybe.withDefault (Task.succeed ())
+                            Maybe.map (\onClose -> Platform.sendToApp router (onClose details)) socket.onClose
+                                |> Maybe.withDefault (Task.succeed ())
 
                         notifyOnNormalClose =
                             -- see https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent for error codes
-                            if InternalSocket.isOpening internalSocket || details.code /= 1000 then
-                                Task.succeed ()
-                            else
+                            if details.code == 1000 then
                                 Maybe.map (Platform.sendToApp router) socket.onNormalClose
                                     |> Maybe.withDefault (Task.succeed ())
+                            else
+                                Task.succeed ()
 
                         notifyOnAbnormalClose =
                             -- see https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent for error codes
-                            if InternalSocket.isOpening internalSocket || details.code /= 1006 then
-                                Task.succeed ()
-                            else
+                            if details.code == 1006 then
                                 Maybe.map (Platform.sendToApp router) socket.onAbnormalClose
                                     |> Maybe.withDefault (Task.succeed ())
+                            else
+                                Task.succeed ()
                     in
                         notifyOnClose
                             &> notifyOnNormalClose
