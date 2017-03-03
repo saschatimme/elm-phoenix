@@ -32,7 +32,13 @@ type alias Model =
     , messages : List Message
     , composedMessage : String
     , accessToken : Int
+    , connectionStatus : ConnectionStatus
     }
+
+
+type ConnectionStatus
+    = Connected
+    | Disconnected
 
 
 type State
@@ -56,6 +62,7 @@ initModel =
     , state = LeftLobby
     , composedMessage = ""
     , accessToken = 1
+    , connectionStatus = Disconnected
     }
 
 
@@ -78,6 +85,7 @@ type Msg
     | UserLeftMsg JD.Value
     | SendComposedMessage
     | SocketClosedAbnormally
+    | ConnectionStatusChanged ConnectionStatus
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -130,6 +138,9 @@ update message model =
         SocketClosedAbnormally ->
             { model | accessToken = model.accessToken + 1 } ! []
 
+        ConnectionStatusChanged connectionStatus ->
+            { model | connectionStatus = connectionStatus } ! []
+
 
 
 -- Decoder
@@ -169,6 +180,8 @@ socket : Int -> Socket Msg
 socket accessToken =
     Socket.init lobbySocket
         |> Socket.withParams [ ( "accessToken", toString accessToken ) ]
+        |> Socket.onOpen (ConnectionStatusChanged Connected)
+        |> Socket.onClose (\_ -> ConnectionStatusChanged Disconnected)
         |> Socket.onAbnormalClose SocketClosedAbnormally
 
 
@@ -233,6 +246,9 @@ enterLeaveLobby model =
                 Html.span [ Attr.class "error" ] [ Html.text "User name already taken" ]
             else
                 Html.span [] [ Html.text "" ]
+
+        socketStatusClass =
+            "socket-status socket-status--" ++ (String.toLower <| toString <| model.connectionStatus)
     in
         Html.div [ Attr.class "enter-lobby" ]
             [ Html.label []
@@ -241,6 +257,7 @@ enterLeaveLobby model =
                 , error
                 ]
             , button model
+            , Html.div [ Attr.class socketStatusClass ] []
             ]
 
 

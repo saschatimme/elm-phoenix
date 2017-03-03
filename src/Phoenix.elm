@@ -435,12 +435,17 @@ onSelfMsg router selfMsg state =
                             else
                                 endpoint
 
+                        notifyOnOpen =
+                            internalSocket.socket.onOpen
+                                |> Maybe.map (Platform.sendToApp router)
+                                |> Maybe.withDefault (Task.succeed ())
+
                         state_ =
                             insertSocket endpoint (InternalSocket.connected ws internalSocket) state
                     in
-                        (heartbeat router endpoint state_)
-                            <&> \newState ->
-                                    rejoinAllChannels endpoint newState
+                        notifyOnOpen
+                            &> (heartbeat router endpoint state_)
+                            <&> (rejoinAllChannels endpoint)
 
                 -- somehow the state is messed up
                 Nothing ->

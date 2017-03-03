@@ -164,3 +164,25 @@ button:disabled {
 .chat-message {
   padding-bottom: 4px;
 }
+
+.enter-lobby {
+  position: relative;
+}
+
+.socket-status {
+  height: 15px;
+  width: 15px;
+  border-radius: 50%;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.socket-status--connected {
+  background: #7cdb7c;
+}
+
+.socket-status--disconnected {
+  background: #f03737;
+}
