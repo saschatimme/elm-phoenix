@@ -1,4 +1,18 @@
-module Phoenix.Socket exposing (Socket, init, heartbeatIntervallSeconds, withoutHeartbeat, reconnectTimer, withParams, withDebug, onClose, onAbnormalClose, onNormalClose, map)
+module Phoenix.Socket
+    exposing
+        ( Socket
+        , init
+        , heartbeatIntervallSeconds
+        , withoutHeartbeat
+        , reconnectTimer
+        , withParams
+        , withDebug
+        , onOpen
+        , onClose
+        , onAbnormalClose
+        , onNormalClose
+        , map
+        )
 
 {-| A socket declares to which endpoint a socket connection should be established.
 
@@ -25,6 +39,7 @@ type alias PhoenixSocket msg =
     , withoutHeartbeat : Bool
     , reconnectTimer : Int -> Float
     , debug : Bool
+    , onOpen : Maybe msg
     , onClose : Maybe ({ code : Int, reason : String, wasClean : Bool } -> msg)
     , onAbnormalClose : Maybe msg
     , onNormalClose : Maybe msg
@@ -43,6 +58,7 @@ init endpoint =
     , withoutHeartbeat = False
     , reconnectTimer = defaultReconnectTimer
     , debug = False
+    , onOpen = Nothing
     , onClose = Nothing
     , onAbnormalClose = Nothing
     , onNormalClose = Nothing
@@ -101,6 +117,11 @@ withDebug socket =
     { socket | debug = True }
 
 
+onOpen : msg -> Socket msg -> Socket msg
+onOpen onOpen socket =
+    { socket | onOpen = Just onOpen }
+
+
 {-| Set a callback which will be called if the socket connection got closed abnormal, i.e., if the server declined the socket authentication. So this callback is useful for updating query params like access tokens.
 
     type Msg =
@@ -142,7 +163,8 @@ defaultReconnectTimer failedAttempts =
 map : (a -> b) -> Socket a -> Socket b
 map func socket =
     { socket
-        | onClose = Maybe.map ((<<) func) socket.onClose
+        | onOpen = Maybe.map func socket.onOpen
+        , onClose = Maybe.map ((<<) func) socket.onClose
         , onNormalClose = Maybe.map func socket.onNormalClose
         , onAbnormalClose = Maybe.map func socket.onAbnormalClose
     }
