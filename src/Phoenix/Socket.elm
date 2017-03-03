@@ -134,7 +134,7 @@ defaultReconnectTimer failedAttempts =
     if failedAttempts < 1 then
         0
     else
-        toFloat (10 * 2 ^ failedAttempts)
+        toFloat (min 15000 (1000 * failedAttempts))
 
 
 {-| Composes each callback with the function `a -> b`.
