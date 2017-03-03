@@ -1,6 +1,7 @@
 module Phoenix.Socket
     exposing
         ( Socket
+        , AbnormalClose
         , init
         , heartbeatIntervallSeconds
         , withoutHeartbeat
@@ -32,6 +33,12 @@ type alias Socket msg =
     PhoenixSocket msg
 
 
+type alias AbnormalClose =
+    { reconnectAttempt : Int
+    , reconnectWait : Time
+    }
+
+
 type alias PhoenixSocket msg =
     { endpoint : String
     , params : List ( String, String )
@@ -41,7 +48,7 @@ type alias PhoenixSocket msg =
     , debug : Bool
     , onOpen : Maybe msg
     , onClose : Maybe ({ code : Int, reason : String, wasClean : Bool } -> msg)
-    , onAbnormalClose : Maybe msg
+    , onAbnormalClose : Maybe (AbnormalClose -> msg)
     , onNormalClose : Maybe msg
     }
 
@@ -131,7 +138,7 @@ onOpen onOpen socket =
             |> withParams [ ( "accessToken", "abc123" ) ]
             |> onAbnormalClose RefreshAccessToken
 -}
-onAbnormalClose : msg -> Socket msg -> Socket msg
+onAbnormalClose : (AbnormalClose -> msg) -> Socket msg -> Socket msg
 onAbnormalClose onAbnormalClose_ socket =
     { socket | onAbnormalClose = Just onAbnormalClose_ }
 
@@ -166,5 +173,5 @@ map func socket =
         | onOpen = Maybe.map func socket.onOpen
         , onClose = Maybe.map ((<<) func) socket.onClose
         , onNormalClose = Maybe.map func socket.onNormalClose
-        , onAbnormalClose = Maybe.map func socket.onAbnormalClose
+        , onAbnormalClose = Maybe.map ((<<) func) socket.onAbnormalClose
     }
