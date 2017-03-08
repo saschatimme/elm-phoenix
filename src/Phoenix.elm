@@ -353,14 +353,8 @@ sendLeaveChannel router endpoint internalChannel =
 
 sendJoinChannel : Platform.Router msg (Msg msg) -> Endpoint -> InternalChannel msg -> Task Never ()
 sendJoinChannel router endpoint internalChannel =
-    let
-        notifyRequestJoin =
-            internalChannel.channel.onRequestJoin
-                |> Maybe.map (Platform.sendToApp router)
-                |> Maybe.withDefault (Task.succeed ())
-    in
-        Platform.sendToSelf router (JoinChannel endpoint internalChannel)
-            &> notifyRequestJoin
+    Platform.sendToSelf router (JoinChannel endpoint internalChannel)
+        &> maybeNotifyApp router internalChannel.channel.onRequestJoin
 
 
 
@@ -443,9 +437,7 @@ onSelfMsg router selfMsg state =
                                 endpoint
 
                         notifyOnOpen =
-                            internalSocket.socket.onOpen
-                                |> Maybe.map (Platform.sendToApp router)
-                                |> Maybe.withDefault (Task.succeed ())
+                            maybeNotifyApp router internalSocket.socket.onOpen
 
                         state_ =
                             insertSocket endpoint (InternalSocket.connected ws internalSocket) state
@@ -514,14 +506,14 @@ onSelfMsg router selfMsg state =
                             Task.map (updateSocket endpoint (InternalSocket.opening backoffIteration pid internalSocket)) getNewState
 
                         notifyOnClose =
-                            Maybe.map (\onClose -> Platform.sendToApp router (onClose details)) socket.onClose
-                                |> Maybe.withDefault (Task.succeed ())
+                            socket.onClose
+                                |> maybeAndMap (Just details)
+                                |> maybeNotifyApp router
 
                         notifyOnNormalClose =
                             -- see https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent for error codes
                             if details.code == 1000 then
-                                Maybe.map (Platform.sendToApp router) socket.onNormalClose
-                                    |> Maybe.withDefault (Task.succeed ())
+                                maybeNotifyApp router socket.onNormalClose
                             else
                                 Task.succeed ()
 
@@ -529,9 +521,8 @@ onSelfMsg router selfMsg state =
                             -- see https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent for error codes
                             if details.code == 1006 then
                                 socket.onAbnormalClose
-                                    |> Maybe.map2 (|>) (Just { reconnectAttempt = backoffIteration, reconnectWait = backoff })
-                                    |> Maybe.map (Platform.sendToApp router)
-                                    |> Maybe.withDefault (Task.succeed ())
+                                    |> maybeAndMap (Just { reconnectAttempt = backoffIteration, reconnectWait = backoff })
+                                    |> maybeNotifyApp router
                             else
                                 Task.succeed ()
                     in
@@ -779,12 +770,7 @@ handleChannelDisconnect router endpoint state =
                 notifyApp { state, channel } =
                     case state of
                         InternalChannel.Joined ->
-                            case channel.onDisconnect of
-                                Nothing ->
-                                    Task.succeed ()
-
-                                Just onDisconnect ->
-                                    Platform.sendToApp router onDisconnect
+                            maybeNotifyApp router channel.onDisconnect
 
                         _ ->
                             Task.succeed ()
@@ -981,3 +967,17 @@ after backoff =
         Task.succeed ()
     else
         Process.sleep backoff
+
+
+
+-- HELPERS
+
+
+maybeNotifyApp router maybeTagger =
+    maybeTagger
+        |> Maybe.map (Platform.sendToApp router)
+        |> Maybe.withDefault (Task.succeed ())
+
+
+maybeAndMap =
+    Maybe.map2 (|>)
