@@ -30,6 +30,7 @@ type alias Model =
     { userName : String
     , userNameTaken : Bool
     , state : State
+    , isActive : Bool
     , messages : List Message
     , composedMessage : String
     , accessToken : Int
@@ -62,6 +63,7 @@ initModel =
     { userName = "User1"
     , userNameTaken = False
     , messages = []
+    , isActive = False
     , state = LeftLobby
     , composedMessage = ""
     , accessToken = 1
@@ -84,6 +86,8 @@ type Msg
     | UserNameTaken
     | UpdateState State
     | UpdateComposedMessage String
+    | Join
+    | Leave
     | NewMsg JD.Value
     | UserJoinedMsg JD.Value
     | UserLeftMsg JD.Value
@@ -107,6 +111,12 @@ update message model =
 
         UpdateComposedMessage composedMessage ->
             { model | composedMessage = composedMessage } ! []
+
+        Join ->
+            { model | isActive = True } ! []
+
+        Leave ->
+            { model | isActive = False } ! []
 
         SendComposedMessage ->
             let
@@ -210,6 +220,7 @@ lobby : String -> Channel Msg
 lobby userName =
     Channel.init "room:lobby"
         |> Channel.withPayload (JE.object [ ( "user_name", JE.string userName ) ])
+        |> Channel.onRequestJoin (UpdateState JoiningLobby)
         |> Channel.onJoin (\_ -> UpdateState JoinedLobby)
         |> Channel.onJoinError (\_ -> UserNameTaken)
         |> Channel.onLeave (\_ -> UpdateState LeftLobby)
@@ -225,20 +236,11 @@ subscriptions model =
 
 
 phoenixSubscription model =
-    let
-        connect =
-            Phoenix.connect (socket model.accessToken)
-    in
-        case model.state of
-            JoiningLobby ->
-                connect [ lobby model.userName ]
-
-            JoinedLobby ->
-                connect [ lobby model.userName ]
-
-            -- we already open the socket connection so that we can faster join the lobby
-            _ ->
-                connect []
+    Phoenix.connect (socket model.accessToken) <|
+        if model.isActive then
+            [ lobby model.userName ]
+        else
+            []
 
 
 
@@ -318,13 +320,13 @@ button model =
                 Html.button [ Attr.disabled True, buttonClass True ] [ Html.text "Leaving lobby..." ]
 
             LeftLobby ->
-                Html.button [ Events.onClick (UpdateState JoiningLobby), buttonClass False ] [ Html.text "Join lobby" ]
+                Html.button [ Events.onClick Join, buttonClass False ] [ Html.text "Join lobby" ]
 
             JoiningLobby ->
-                Html.button [ Attr.disabled True, buttonClass True ] [ Html.text "Joning lobby..." ]
+                Html.button [ Attr.disabled True, buttonClass True ] [ Html.text "Joining lobby..." ]
 
             JoinedLobby ->
-                Html.button [ buttonClass False, Events.onClick (UpdateState LeavingLobby) ] [ Html.text "Leave lobby" ]
+                Html.button [ Events.onClick Leave, buttonClass False ] [ Html.text "Leave lobby" ]
 
 
 chatMessages : List Message -> Html Msg

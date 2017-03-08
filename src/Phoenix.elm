@@ -285,9 +285,9 @@ handleSocketsUpdate router definedSockets stateSockets =
 
 
 handleChannelsUpdate : Platform.Router msg (Msg msg) -> InternalChannelsDict msg -> InternalChannelsDict msg -> Task Never (InternalChannelsDict msg)
-handleChannelsUpdate router definedChannels internalChannels =
+handleChannelsUpdate router nextChannels previousChannels =
     let
-        leftStep endpoint definedEndpointChannels getNewChannels =
+        addedChannelsStep endpoint definedEndpointChannels taskChain =
             let
                 sendJoin =
                     Dict.values definedEndpointChannels
@@ -297,27 +297,27 @@ handleChannelsUpdate router definedChannels internalChannels =
                 insert newChannels =
                     Task.succeed (Dict.insert endpoint definedEndpointChannels newChannels)
             in
-                sendJoin &> getNewChannels <&> insert
+                sendJoin &> taskChain <&> insert
 
-        bothStep endpoint definedEndpointChannels stateEndpointChannels getNewChannels =
+        retainedChannelsStep endpoint definedEndpointChannels stateEndpointChannels taskChain =
             let
                 getEndpointChannels =
                     handleEndpointChannelsUpdate router endpoint definedEndpointChannels stateEndpointChannels
             in
                 Task.map2 (\endpointChannels newChannels -> Dict.insert endpoint endpointChannels newChannels)
                     getEndpointChannels
-                    getNewChannels
+                    taskChain
 
-        rightStep endpoint stateEndpointChannels getNewChannels =
+        removedChannelsStep endpoint stateEndpointChannels taskChain =
             let
                 sendLeave =
                     Dict.values stateEndpointChannels
                         |> List.foldl (\channel task -> task &> sendLeaveChannel router endpoint channel)
                             (Task.succeed ())
             in
-                sendLeave &> getNewChannels
+                sendLeave &> taskChain
     in
-        Dict.merge leftStep bothStep rightStep definedChannels internalChannels (Task.succeed Dict.empty)
+        Dict.merge addedChannelsStep retainedChannelsStep removedChannelsStep nextChannels previousChannels (Task.succeed Dict.empty)
 
 
 handleEndpointChannelsUpdate : Platform.Router msg (Msg msg) -> Endpoint -> Dict Topic (InternalChannel msg) -> Dict Topic (InternalChannel msg) -> Task Never (Dict Topic (InternalChannel msg))
@@ -353,7 +353,14 @@ sendLeaveChannel router endpoint internalChannel =
 
 sendJoinChannel : Platform.Router msg (Msg msg) -> Endpoint -> InternalChannel msg -> Task Never ()
 sendJoinChannel router endpoint internalChannel =
-    Platform.sendToSelf router (JoinChannel endpoint internalChannel)
+    let
+        notifyRequestJoin =
+            internalChannel.channel.onRequestJoin
+                |> Maybe.map (Platform.sendToApp router)
+                |> Maybe.withDefault (Task.succeed ())
+    in
+        Platform.sendToSelf router (JoinChannel endpoint internalChannel)
+            &> notifyRequestJoin
 
 
 
