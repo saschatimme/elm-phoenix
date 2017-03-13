@@ -1,4 +1,20 @@
-module Phoenix.Channel exposing (Channel, init, withPayload, onJoin, onRejoin, onJoinError, onError, onDisconnect, on, onLeave, onLeaveError, withDebug, map)
+module Phoenix.Channel
+    exposing
+        ( Channel
+        , init
+        , withPayload
+        , onRequestJoin
+        , onJoin
+        , onRejoin
+        , onJoinError
+        , onError
+        , onDisconnect
+        , on
+        , onLeave
+        , onLeaveError
+        , withDebug
+        , map
+        )
 
 {-| A channel declares which topic should be joined, registers event handlers and has various callbacks for possible lifecycle events.
 
@@ -26,6 +42,7 @@ type alias Channel msg =
 type alias PhoenixChannel msg =
     { topic : String
     , payload : Maybe Value
+    , onRequestJoin : Maybe msg
     , onJoin : Maybe (Value -> msg)
     , onJoinError : Maybe (Value -> msg)
     , onDisconnect : Maybe msg
@@ -46,6 +63,7 @@ init : String -> Channel msg
 init topic =
     { topic = topic
     , payload = Nothing
+    , onRequestJoin = Nothing
     , onJoin = Nothing
     , onJoinError = Nothing
     , onDisconnect = Nothing
@@ -81,6 +99,19 @@ withPayload payload_ chan =
 on : String -> (Value -> msg) -> Channel msg -> Channel msg
 on event cb chan =
     { chan | on = Dict.insert event cb chan.on }
+
+
+{-| Set a callback which will be called after you request to join the channel.
+
+    type Msg =
+        JoinLobbyRequested
+
+    init "room:lobby"
+        |> onRequestJoin JoinLobbyRequested
+-}
+onRequestJoin : msg -> Channel msg -> Channel msg
+onRequestJoin onRequestJoin_ chan =
+    { chan | onRequestJoin = Just onRequestJoin_ }
 
 
 {-| Set a callback which will be called after you sucessfully joined the channel. It will also be called after you rejoined the channel after a disconnect unless you specified an `onRejoin` handler.
@@ -188,7 +219,8 @@ map func chan =
 
         channel =
             { chan
-                | onJoin = f chan.onJoin
+                | onRequestJoin = Maybe.map func chan.onRequestJoin
+                , onJoin = f chan.onJoin
                 , onJoinError = f chan.onJoinError
                 , onError = Maybe.map func chan.onError
                 , onDisconnect = Maybe.map func chan.onDisconnect
