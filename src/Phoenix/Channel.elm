@@ -12,6 +12,7 @@ module Phoenix.Channel
         , on
         , onLeave
         , onLeaveError
+        , onPresenceChange
         , withDebug
         , map
         )
@@ -23,6 +24,7 @@ module Phoenix.Channel
 
 # Helpers
 @docs init, withPayload, on, onJoin, onRequestJoin, onJoinError, onError, onDisconnect, onRejoin, onLeave, onLeaveError, withDebug, map
+@docs init, withPayload, on, onJoin, onRequestJoin, onJoinError, onError, onDisconnect, onRejoin, onLeave, onLeaveError, onPresenceChange, withDebug, map
 
 -}
 
@@ -51,6 +53,7 @@ type alias PhoenixChannel msg =
     , onLeave : Maybe (Value -> msg)
     , onLeaveError : Maybe (Value -> msg)
     , on : Dict String (Value -> msg)
+    , onPresenceChange : Maybe (Dict String (List Value) -> msg)
     , debug : Bool
     }
 
@@ -72,6 +75,7 @@ init topic =
     , onLeave = Nothing
     , onLeaveError = Nothing
     , on = Dict.empty
+    , onPresenceChange = Nothing
     , debug = False
     }
 
@@ -209,6 +213,19 @@ onLeaveError onLeaveError_ chan =
     { chan | onLeaveError = Just onLeaveError_ }
 
 
+{-| Set a callback which will be called when there is a change in the presence state caused by "presence_state" and "presence_diff" events.
+
+    type Msg =
+        PresenceChange (Dict String (List Json.Encode.Value)) | ...
+
+    init "room:lobby"
+        |> onPresenceChange PresenceChange
+-}
+onPresenceChange : (Dict String (List Value) -> msg) -> Channel msg -> Channel msg
+onPresenceChange onPresenceChange_ chan =
+    { chan | onPresenceChange = Just onPresenceChange_ }
+
+
 {-| Composes each callback with the function `a -> b`.
 -}
 map : (a -> b) -> Channel a -> Channel b
@@ -227,6 +244,7 @@ map func chan =
                 , onRejoin = f chan.onRejoin
                 , onLeave = f chan.onLeave
                 , onLeaveError = f chan.onLeaveError
+                , onPresenceChange = f chan.onPresenceChange
                 , on = Dict.map (\_ a -> func << a) chan.on
             }
     in

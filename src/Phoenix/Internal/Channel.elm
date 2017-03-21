@@ -4,6 +4,7 @@ import Dict exposing (Dict)
 import Json.Decode as Decode exposing (Value)
 import Phoenix.Internal.Helpers as Helpers
 import Phoenix.Internal.Message as Message exposing (Message)
+import Phoenix.Internal.Presence as Presence exposing (PresenceState)
 import Phoenix.Channel as Channel
 
 
@@ -18,7 +19,7 @@ type State
 
 
 type alias InternalChannel msg =
-    { state : State, channel : Channel.Channel msg }
+    { state : State, presenceState : PresenceState, channel : Channel.Channel msg }
 
 
 type alias Endpoint =
@@ -34,8 +35,8 @@ type alias Event =
 
 
 map : (a -> b) -> InternalChannel a -> InternalChannel b
-map func { state, channel } =
-    InternalChannel state (Channel.map func channel)
+map func { state, presenceState, channel } =
+    InternalChannel state presenceState (Channel.map func channel)
 
 
 joinMessage : InternalChannel msg -> Message
@@ -87,6 +88,12 @@ insertState endpoint topic state dict =
         Helpers.updateIn endpoint topic update dict
 
 
+updatePresenceState : PresenceState -> InternalChannel msg -> InternalChannel msg
+updatePresenceState presenceState internalChannel =
+    -- TODO: debug?
+    (InternalChannel internalChannel.state presenceState internalChannel.channel)
+
+
 updateState : State -> InternalChannel msg -> InternalChannel msg
 updateState state internalChannel =
     if internalChannel.channel.debug then
@@ -111,16 +118,16 @@ updateState state internalChannel =
                     _ ->
                         Debug.log ("Channel \"" ++ internalChannel.channel.topic ++ "\"") state
         in
-            (InternalChannel state internalChannel.channel)
+            (InternalChannel state internalChannel.presenceState internalChannel.channel)
     else
-        (InternalChannel state internalChannel.channel)
+        (InternalChannel state internalChannel.presenceState internalChannel.channel)
 
 
 updatePayload : Maybe Value -> InternalChannel msg -> InternalChannel msg
-updatePayload payload { state, channel } =
-    InternalChannel state { channel | payload = payload }
+updatePayload payload { state, presenceState, channel } =
+    InternalChannel state presenceState { channel | payload = payload }
 
 
 updateOn : Dict Topic (Value -> msg) -> InternalChannel msg -> InternalChannel msg
-updateOn on { state, channel } =
-    InternalChannel state { channel | on = on }
+updateOn on { state, presenceState, channel } =
+    InternalChannel state presenceState { channel | on = on }

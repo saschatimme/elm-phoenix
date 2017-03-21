@@ -19,89 +19,6 @@
     "generated-with-elm-version": "0.18.0"
   },
   {
-    "name": "Phoenix.Channel",
-    "comment": " A channel declares which topic should be joined, registers event handlers and has various callbacks for possible lifecycle events.\n\n# Definition\n@docs Channel\n\n# Helpers\n@docs init, withPayload, on, onJoin, onRequestJoin, onJoinError, onError, onDisconnect, onRejoin, onLeave, onLeaveError, withDebug, map\n\n",
-    "aliases": [
-      {
-        "name": "Channel",
-        "comment": " Representation of a Phoenix Channel\n",
-        "args": [
-          "msg"
-        ],
-        "type": "Phoenix.Channel.PhoenixChannel msg"
-      }
-    ],
-    "types": [],
-    "values": [
-      {
-        "name": "init",
-        "comment": " Initialize a channel to a given topic.\n\n    init \"room:lobby\"\n",
-        "type": "String -> Phoenix.Channel.Channel msg"
-      },
-      {
-        "name": "map",
-        "comment": " Composes each callback with the function `a -> b`.\n",
-        "type": "(a -> b) -> Phoenix.Channel.Channel a -> Phoenix.Channel.Channel b"
-      },
-      {
-        "name": "on",
-        "comment": " Register an event handler for a event.\n\n    type Msg = NewMsg Value | ...\n\n    init \"roomy:lobby\"\n        |> on \"new_msg\" NewMsg\n",
-        "type": "String -> (Json.Decode.Value -> msg) -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
-      },
-      {
-        "name": "onDisconnect",
-        "comment": " Set a callback which will be called if the socket connection got interrupted. Useful to switch the online status to offline.\n\n    type Msg =\n        IsOffline | ...\n\n    init \"room:lobby\"\n        |> onDisconnect IsOffline\n\n**Note**: The effect manager will automatically try to reconnect to the server and to rejoin the channel. See `onRejoin` for details.\n",
-        "type": "msg -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
-      },
-      {
-        "name": "onError",
-        "comment": " Set a callback which will be called if the channel process on the server crashed. The effect manager will automatically rejoin the channel after a crash.\n\n    type Msg =\n         ChannelCrashed | ...\n\n    init \"room:lobby\"\n        |> onError ChannelCrashed\n",
-        "type": "msg -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
-      },
-      {
-        "name": "onJoin",
-        "comment": " Set a callback which will be called after you sucessfully joined the channel. It will also be called after you rejoined the channel after a disconnect unless you specified an `onRejoin` handler.\n\n    type Msg =\n        IsOnline Json.Encode.Value | ...\n\n    init \"room:lobby\"\n        |> onJoin IsOnline\n",
-        "type": "(Json.Decode.Value -> msg) -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
-      },
-      {
-        "name": "onJoinError",
-        "comment": " Set a callback which will be called if the server declined your request to join the channel.\n\n    type Msg =\n        CouldNotJoin Json.Encode.Value | ...\n\n    init \"room:lobby\"\n        |> onJoinError CouldNotJoin\n\n**Note**: If a channel declined a request to join a topic the effect manager won_t try again.\n",
-        "type": "(Json.Decode.Value -> msg) -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
-      },
-      {
-        "name": "onLeave",
-        "comment": " Set a callback which will be called after you sucessfully left a channel.\n\n    type Msg =\n        LeftLobby Json.Encode.Value | ...\n\n    init \"room:lobby\"\n        |> onLeave LeftLobby\n",
-        "type": "(Json.Decode.Value -> msg) -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
-      },
-      {
-        "name": "onLeaveError",
-        "comment": " Set a callback which will be called if the server declined your request to left a channel.\n*(It seems that Phoenix v1.2 doesn_t send this)*\n",
-        "type": "(Json.Decode.Value -> msg) -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
-      },
-      {
-        "name": "onRejoin",
-        "comment": " Set a callback which will be called after you sucessfully rejoined the channel after a disconnect. Useful if you want to catch up missed messages.\n\n    type Msg =\n        IsOnline Json.Encode.Value | ...\n\n    init \"room:lobby\"\n        |> onRejoin IsOnline\n",
-        "type": "(Json.Decode.Value -> msg) -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
-      },
-      {
-        "name": "onRequestJoin",
-        "comment": " Set a callback which will be called after you request to join the channel.\n\n    type Msg =\n        JoinLobbyRequested\n\n    init \"room:lobby\"\n        |> onRequestJoin JoinLobbyRequested\n",
-        "type": "msg -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
-      },
-      {
-        "name": "withDebug",
-        "comment": " Print all status changes.\n",
-        "type": "Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
-      },
-      {
-        "name": "withPayload",
-        "comment": " Attach a payload to the join message. You can use this to submit e.g. a user id or authentication infos. This will be the second argument in your `join/3` callback on the server.\n\n    payload =\n        Json.Encode.object [(\"user_id\", \"123\")]\n\n    init \"room:lobby\"\n        |> withPayload payload\n",
-        "type": "Json.Decode.Value -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
-      }
-    ],
-    "generated-with-elm-version": "0.18.0"
-  },
-  {
     "name": "Phoenix.Socket",
     "comment": " A socket declares to which endpoint a socket connection should be established.\n\n# Definition\n@docs Socket, AbnormalClose\n\n# Helpers\n@docs init, withParams, heartbeatIntervallSeconds, withoutHeartbeat, reconnectTimer, withDebug, onAbnormalClose, onNormalClose, onOpen, onClose, map\n",
     "aliases": [
@@ -176,6 +93,94 @@
         "name": "withoutHeartbeat",
         "comment": " The client regularly sends a heartbeat to the sever. With this function you can disable the heartbeat.\n\n    init \"ws://localhost:4000/socket/websocket\"\n        |> withoutHeartbeat\n",
         "type": "Phoenix.Socket.Socket msg -> Phoenix.Socket.Socket msg"
+      }
+    ],
+    "generated-with-elm-version": "0.18.0"
+  },
+  {
+    "name": "Phoenix.Channel",
+    "comment": " A channel declares which topic should be joined, registers event handlers and has various callbacks for possible lifecycle events.\n\n# Definition\n@docs Channel\n\n# Helpers\n@docs init, withPayload, on, onJoin, onRequestJoin, onJoinError, onError, onDisconnect, onRejoin, onLeave, onLeaveError, withDebug, map\n@docs init, withPayload, on, onJoin, onRequestJoin, onJoinError, onError, onDisconnect, onRejoin, onLeave, onLeaveError, onPresenceChange, withDebug, map\n\n",
+    "aliases": [
+      {
+        "name": "Channel",
+        "comment": " Representation of a Phoenix Channel\n",
+        "args": [
+          "msg"
+        ],
+        "type": "Phoenix.Channel.PhoenixChannel msg"
+      }
+    ],
+    "types": [],
+    "values": [
+      {
+        "name": "init",
+        "comment": " Initialize a channel to a given topic.\n\n    init \"room:lobby\"\n",
+        "type": "String -> Phoenix.Channel.Channel msg"
+      },
+      {
+        "name": "map",
+        "comment": " Composes each callback with the function `a -> b`.\n",
+        "type": "(a -> b) -> Phoenix.Channel.Channel a -> Phoenix.Channel.Channel b"
+      },
+      {
+        "name": "on",
+        "comment": " Register an event handler for a event.\n\n    type Msg = NewMsg Value | ...\n\n    init \"roomy:lobby\"\n        |> on \"new_msg\" NewMsg\n",
+        "type": "String -> (Json.Decode.Value -> msg) -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
+      },
+      {
+        "name": "onDisconnect",
+        "comment": " Set a callback which will be called if the socket connection got interrupted. Useful to switch the online status to offline.\n\n    type Msg =\n        IsOffline | ...\n\n    init \"room:lobby\"\n        |> onDisconnect IsOffline\n\n**Note**: The effect manager will automatically try to reconnect to the server and to rejoin the channel. See `onRejoin` for details.\n",
+        "type": "msg -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
+      },
+      {
+        "name": "onError",
+        "comment": " Set a callback which will be called if the channel process on the server crashed. The effect manager will automatically rejoin the channel after a crash.\n\n    type Msg =\n         ChannelCrashed | ...\n\n    init \"room:lobby\"\n        |> onError ChannelCrashed\n",
+        "type": "msg -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
+      },
+      {
+        "name": "onJoin",
+        "comment": " Set a callback which will be called after you sucessfully joined the channel. It will also be called after you rejoined the channel after a disconnect unless you specified an `onRejoin` handler.\n\n    type Msg =\n        IsOnline Json.Encode.Value | ...\n\n    init \"room:lobby\"\n        |> onJoin IsOnline\n",
+        "type": "(Json.Decode.Value -> msg) -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
+      },
+      {
+        "name": "onJoinError",
+        "comment": " Set a callback which will be called if the server declined your request to join the channel.\n\n    type Msg =\n        CouldNotJoin Json.Encode.Value | ...\n\n    init \"room:lobby\"\n        |> onJoinError CouldNotJoin\n\n**Note**: If a channel declined a request to join a topic the effect manager won_t try again.\n",
+        "type": "(Json.Decode.Value -> msg) -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
+      },
+      {
+        "name": "onLeave",
+        "comment": " Set a callback which will be called after you sucessfully left a channel.\n\n    type Msg =\n        LeftLobby Json.Encode.Value | ...\n\n    init \"room:lobby\"\n        |> onLeave LeftLobby\n",
+        "type": "(Json.Decode.Value -> msg) -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
+      },
+      {
+        "name": "onLeaveError",
+        "comment": " Set a callback which will be called if the server declined your request to left a channel.\n*(It seems that Phoenix v1.2 doesn_t send this)*\n",
+        "type": "(Json.Decode.Value -> msg) -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
+      },
+      {
+        "name": "onPresenceChange",
+        "comment": " Set a callback which will be called when there is a change in the presence state caused by \"presence_state\" and \"presence_diff\" events.\n\n    type Msg =\n        PresenceChange (Dict String (List Json.Encode.Value)) | ...\n\n    init \"room:lobby\"\n        |> onPresenceChange PresenceChange\n",
+        "type": "(Dict.Dict String (List Json.Decode.Value) -> msg) -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
+      },
+      {
+        "name": "onRejoin",
+        "comment": " Set a callback which will be called after you sucessfully rejoined the channel after a disconnect. Useful if you want to catch up missed messages.\n\n    type Msg =\n        IsOnline Json.Encode.Value | ...\n\n    init \"room:lobby\"\n        |> onRejoin IsOnline\n",
+        "type": "(Json.Decode.Value -> msg) -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
+      },
+      {
+        "name": "onRequestJoin",
+        "comment": " Set a callback which will be called after you request to join the channel.\n\n    type Msg =\n        JoinLobbyRequested\n\n    init \"room:lobby\"\n        |> onRequestJoin JoinLobbyRequested\n",
+        "type": "msg -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
+      },
+      {
+        "name": "withDebug",
+        "comment": " Print all status changes.\n",
+        "type": "Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
+      },
+      {
+        "name": "withPayload",
+        "comment": " Attach a payload to the join message. You can use this to submit e.g. a user id or authentication infos. This will be the second argument in your `join/3` callback on the server.\n\n    payload =\n        Json.Encode.object [(\"user_id\", \"123\")]\n\n    init \"room:lobby\"\n        |> withPayload payload\n",
+        "type": "Json.Decode.Value -> Phoenix.Channel.Channel msg -> Phoenix.Channel.Channel msg"
       }
     ],
     "generated-with-elm-version": "0.18.0"
