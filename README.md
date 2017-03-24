@@ -28,7 +28,7 @@ subscriptions model =
 ```
 
 ## Installation:
-Since this package is an [effect manager](https://guide.elm-lang.org/effect_managers/) it is at the moment not aviable via elm package. Thus the recommended way to install the package is to use [elm-github-install](https://github.com/gdotdesign/elm-github-install). Simply add in `elm-package.json` `"saschatimme/elm-phoenix": "0.2.1 <= v < 1.0"` to your dependencies:
+Since this package is an [effect](https://guide.elm-lang.org/architecture/effects/) manager it is at the moment not aviable via elm package. Thus the recommended way to install the package is to use [elm-github-install](https://github.com/gdotdesign/elm-github-install). Simply add in `elm-package.json` `"saschatimme/elm-phoenix": "0.2.1 <= v < 1.0"` to your dependencies:
 ```
 # elm-package.json
 {
