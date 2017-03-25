@@ -22,7 +22,7 @@ module Phoenix.Channel
 @docs Channel
 
 # Helpers
-@docs init, withPayload, on, onJoin, onJoinError, onError, onDisconnect, onRejoin, onLeave, onLeaveError, withDebug, map
+@docs init, withPayload, on, onJoin, onRequestJoin, onJoinError, onError, onDisconnect, onRejoin, onLeave, onLeaveError, withDebug, map
 
 -}
 
