@@ -18,10 +18,10 @@ module Phoenix.Socket
 {-| A socket declares to which endpoint a socket connection should be established.
 
 # Definition
-@docs Socket
+@docs Socket, AbnormalClose
 
 # Helpers
-@docs init, withParams, heartbeatIntervallSeconds, withoutHeartbeat, reconnectTimer, withDebug, onAbnormalClose, onNormalClose, onClose, map
+@docs init, withParams, heartbeatIntervallSeconds, withoutHeartbeat, reconnectTimer, withDebug, onAbnormalClose, onNormalClose, onOpen, onClose, map
 -}
 
 import Time exposing (Time)
@@ -33,6 +33,8 @@ type alias Socket msg =
     PhoenixSocket msg
 
 
+{-| Representation of an Abnormal close.
+-}
 type alias AbnormalClose =
     { reconnectAttempt : Int
     , reconnectWait : Time
@@ -124,6 +126,8 @@ withDebug socket =
     { socket | debug = True }
 
 
+{-| Set a callback which will be called if the socket connection gets open.
+-}
 onOpen : msg -> Socket msg -> Socket msg
 onOpen onOpen socket =
     { socket | onOpen = Just onOpen }
