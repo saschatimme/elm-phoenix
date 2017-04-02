@@ -20,6 +20,7 @@ import Process
 import Phoenix.Internal.Channel as InternalChannel exposing (InternalChannel)
 import Phoenix.Internal.Helpers as Helpers exposing ((&>), (<&>))
 import Phoenix.Internal.Message as Message exposing (Message)
+import Phoenix.Internal.Presence as InternalPresence
 import Phoenix.Internal.Socket as InternalSocket exposing (InternalSocket)
 import Phoenix.Channel as Channel exposing (Channel)
 import Phoenix.Socket as Socket exposing (Socket)
@@ -236,7 +237,7 @@ buildChannelsDict subs dict =
         (Connect { endpoint } channels) :: rest ->
             let
                 internalChan chan =
-                    (InternalChannel InternalChannel.Closed chan)
+                    (InternalChannel InternalChannel.Closed Dict.empty chan)
 
                 build chan dict_ =
                     buildChannelsDict rest (Helpers.insertIn endpoint chan.topic (internalChan chan) dict_)
@@ -662,6 +663,68 @@ processQueue endpoint messages state =
 handlePhoenixMessage : Platform.Router msg (Msg msg) -> Endpoint -> Message -> State msg -> Task x (State msg)
 handlePhoenixMessage router endpoint message state =
     case message.event of
+        "presence_state" ->
+            case Helpers.getIn endpoint message.topic state.channels of
+                Nothing ->
+                    Task.succeed state
+
+                Just internalChannel ->
+                    let
+                        newPresenceState =
+                            case InternalPresence.decodePresenceState message.payload of
+                                Ok presenceState ->
+                                    presenceState
+
+                                Err err ->
+                                    internalChannel.presenceState
+
+                        updatedChannel =
+                            InternalChannel.updatePresenceState newPresenceState internalChannel
+
+                        updatedChannels =
+                            Helpers.insertIn endpoint internalChannel.channel.topic updatedChannel state.channels
+
+                        sendToApp =
+                            case internalChannel.channel.onPresenceChange of
+                                Nothing ->
+                                    Task.succeed ()
+
+                                Just onPresenceChange ->
+                                    Platform.sendToApp router (onPresenceChange <| InternalPresence.getPresenceState newPresenceState)
+                    in
+                        sendToApp &> Task.succeed (updateChannels updatedChannels state)
+
+        "presence_diff" ->
+            case Helpers.getIn endpoint message.topic state.channels of
+                Nothing ->
+                    Task.succeed state
+
+                Just internalChannel ->
+                    let
+                        newPresenceState =
+                            case InternalPresence.decodePresenceDiff message.payload of
+                                Ok presenceDiff ->
+                                    InternalPresence.syncPresenceDiff presenceDiff internalChannel.presenceState
+
+                                Err err ->
+                                    internalChannel.presenceState
+
+                        updatedChannel =
+                            InternalChannel.updatePresenceState newPresenceState internalChannel
+
+                        updatedChannels =
+                            Helpers.insertIn endpoint internalChannel.channel.topic updatedChannel state.channels
+
+                        sendToApp =
+                            case internalChannel.channel.onPresenceChange of
+                                Nothing ->
+                                    Task.succeed ()
+
+                                Just onPresenceChange ->
+                                    Platform.sendToApp router (onPresenceChange <| InternalPresence.getPresenceState newPresenceState)
+                    in
+                        sendToApp &> Task.succeed (updateChannels updatedChannels state)
+
         "phx_error" ->
             case Helpers.getIn endpoint message.topic state.channels of
                 Nothing ->
