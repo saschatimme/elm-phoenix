@@ -685,12 +685,17 @@ handlePhoenixMessage router endpoint message state =
                             Helpers.insertIn endpoint internalChannel.channel.topic updatedChannel state.channels
 
                         sendToApp =
-                            case internalChannel.channel.onPresenceChange of
+                            case internalChannel.channel.presence of
                                 Nothing ->
                                     Task.succeed ()
 
-                                Just onPresenceChange ->
-                                    Platform.sendToApp router (onPresenceChange <| InternalPresence.getPresenceState newPresenceState)
+                                Just presence ->
+                                    case presence.onChange of
+                                        Just onChange ->
+                                            Platform.sendToApp router (onChange <| InternalPresence.getPresenceState newPresenceState)
+
+                                        Nothing ->
+                                            Task.succeed ()
                     in
                         sendToApp &> Task.succeed (updateChannels updatedChannels state)
 
@@ -701,27 +706,56 @@ handlePhoenixMessage router endpoint message state =
 
                 Just internalChannel ->
                     let
-                        newPresenceState =
+                        diffResult =
                             case InternalPresence.decodePresenceDiff message.payload of
                                 Ok presenceDiff ->
-                                    InternalPresence.syncPresenceDiff presenceDiff internalChannel.presenceState
+                                    let
+                                        newState =
+                                            InternalPresence.syncPresenceDiff presenceDiff internalChannel.presenceState
+                                    in
+                                        { newState = newState, joins = Just presenceDiff.joins, leaves = Just presenceDiff.leaves }
 
                                 Err err ->
-                                    internalChannel.presenceState
+                                    { newState = internalChannel.presenceState, joins = Nothing, leaves = Nothing }
 
                         updatedChannel =
-                            InternalChannel.updatePresenceState newPresenceState internalChannel
+                            InternalChannel.updatePresenceState diffResult.newState internalChannel
 
                         updatedChannels =
                             Helpers.insertIn endpoint internalChannel.channel.topic updatedChannel state.channels
 
                         sendToApp =
-                            case internalChannel.channel.onPresenceChange of
+                            case internalChannel.channel.presence of
                                 Nothing ->
                                     Task.succeed ()
 
-                                Just onPresenceChange ->
-                                    Platform.sendToApp router (onPresenceChange <| InternalPresence.getPresenceState newPresenceState)
+                                Just presence ->
+                                    let
+                                        sendOnJoins =
+                                            case ( presence.onJoins, diffResult.joins ) of
+                                                ( Just onJoins, Just joins ) ->
+                                                    Platform.sendToApp router (onJoins <| InternalPresence.getPresenceState joins)
+
+                                                ( _, _ ) ->
+                                                    Task.succeed ()
+
+                                        sendOnLeaves =
+                                            case ( presence.onLeaves, diffResult.leaves ) of
+                                                ( Just onLeaves, Just leaves ) ->
+                                                    Platform.sendToApp router (onLeaves <| InternalPresence.getPresenceState leaves)
+
+                                                ( _, _ ) ->
+                                                    Task.succeed ()
+
+                                        sendOnChange =
+                                            case presence.onChange of
+                                                Just onChange ->
+                                                    Platform.sendToApp router (onChange <| InternalPresence.getPresenceState diffResult.newState)
+
+                                                Nothing ->
+                                                    Task.succeed ()
+                                    in
+                                        sendOnJoins &> sendOnLeaves &> sendOnChange
                     in
                         sendToApp &> Task.succeed (updateChannels updatedChannels state)
 

@@ -8,6 +8,7 @@ import Html.Attributes as Attr
 import Html.Events as Events
 import Phoenix
 import Phoenix.Channel as Channel exposing (Channel)
+import Phoenix.Presence as Presence exposing (Presence)
 import Phoenix.Socket as Socket exposing (Socket, AbnormalClose)
 import Phoenix.Push as Push
 import Time exposing (Time)
@@ -94,7 +95,7 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
-    case Debug.log "update" message of
+    case message of
         UpdateUserName name ->
             { model | userName = name } ! []
 
@@ -127,7 +128,7 @@ update message model =
                     model ! []
 
         UpdatePresence presenceState ->
-            { model | presence = presenceState }
+            { model | presence = Debug.log "presenceState " presenceState }
                 ! []
 
         SocketClosedAbnormally abnormalClose ->
@@ -184,14 +185,19 @@ socket =
 
 lobby : String -> Channel Msg
 lobby userName =
-    Channel.init "room:lobby"
-        |> Channel.withPayload (JE.object [ ( "user_name", JE.string userName ) ])
-        |> Channel.onRequestJoin (UpdateState JoiningLobby)
-        |> Channel.onJoin (\_ -> UpdateState JoinedLobby)
-        |> Channel.onLeave (\_ -> UpdateState LeftLobby)
-        |> Channel.on "new_msg" (\msg -> NewMsg msg)
-        |> Channel.onPresenceChange (\presenceState -> UpdatePresence presenceState)
-        |> Channel.withDebug
+    let
+        presence =
+            Presence.create
+                |> Presence.onChange UpdatePresence
+    in
+        Channel.init "room:lobby"
+            |> Channel.withPayload (JE.object [ ( "user_name", JE.string userName ) ])
+            |> Channel.onRequestJoin (UpdateState JoiningLobby)
+            |> Channel.onJoin (\_ -> UpdateState JoinedLobby)
+            |> Channel.onLeave (\_ -> UpdateState LeftLobby)
+            |> Channel.on "new_msg" (\msg -> NewMsg msg)
+            |> Channel.withPresence presence
+            |> Channel.withDebug
 
 
 subscriptions : Model -> Sub Msg

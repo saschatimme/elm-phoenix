@@ -9198,6 +9198,54 @@ var _user$project$Phoenix_Internal_Presence$decodePresenceDiff = function (paylo
 	return A2(_elm_lang$core$Json_Decode$decodeValue, _user$project$Phoenix_Internal_Presence$presenceDiffDecoder, payload);
 };
 
+var _user$project$Phoenix_Presence$map = F2(
+	function (func, pres) {
+		var f = _elm_lang$core$Maybe$map(
+			F2(
+				function (x, y) {
+					return function (_p0) {
+						return x(
+							y(_p0));
+					};
+				})(func));
+		return _elm_lang$core$Native_Utils.update(
+			pres,
+			{
+				onChange: f(pres.onChange),
+				onJoins: f(pres.onJoins),
+				onLeaves: f(pres.onLeaves)
+			});
+	});
+var _user$project$Phoenix_Presence$onLeaves = F2(
+	function (func, presence) {
+		return _elm_lang$core$Native_Utils.update(
+			presence,
+			{
+				onLeaves: _elm_lang$core$Maybe$Just(func)
+			});
+	});
+var _user$project$Phoenix_Presence$onJoins = F2(
+	function (func, presence) {
+		return _elm_lang$core$Native_Utils.update(
+			presence,
+			{
+				onJoins: _elm_lang$core$Maybe$Just(func)
+			});
+	});
+var _user$project$Phoenix_Presence$onChange = F2(
+	function (func, presence) {
+		return _elm_lang$core$Native_Utils.update(
+			presence,
+			{
+				onChange: _elm_lang$core$Maybe$Just(func)
+			});
+	});
+var _user$project$Phoenix_Presence$create = {onChange: _elm_lang$core$Maybe$Nothing, onJoins: _elm_lang$core$Maybe$Nothing, onLeaves: _elm_lang$core$Maybe$Nothing};
+var _user$project$Phoenix_Presence$PhoenixPresence = F3(
+	function (a, b, c) {
+		return {onChange: a, onJoins: b, onLeaves: c};
+	});
+
 var _user$project$Phoenix_Channel$withDebug = function (channel) {
 	return _elm_lang$core$Native_Utils.update(
 		channel,
@@ -9224,7 +9272,10 @@ var _user$project$Phoenix_Channel$map = F2(
 				onRejoin: f(chan.onRejoin),
 				onLeave: f(chan.onLeave),
 				onLeaveError: f(chan.onLeaveError),
-				onPresenceChange: f(chan.onPresenceChange),
+				presence: A2(
+					_elm_lang$core$Maybe$map,
+					_user$project$Phoenix_Presence$map(func),
+					chan.presence),
 				on: A2(
 					_elm_lang$core$Dict$map,
 					F2(
@@ -9238,12 +9289,12 @@ var _user$project$Phoenix_Channel$map = F2(
 			});
 		return channel;
 	});
-var _user$project$Phoenix_Channel$onPresenceChange = F2(
-	function (onPresenceChange_, chan) {
+var _user$project$Phoenix_Channel$withPresence = F2(
+	function (presence, chan) {
 		return _elm_lang$core$Native_Utils.update(
 			chan,
 			{
-				onPresenceChange: _elm_lang$core$Maybe$Just(onPresenceChange_)
+				presence: _elm_lang$core$Maybe$Just(presence)
 			});
 	});
 var _user$project$Phoenix_Channel$onLeaveError = F2(
@@ -9337,7 +9388,7 @@ var _user$project$Phoenix_Channel$withPayload = F2(
 			});
 	});
 var _user$project$Phoenix_Channel$init = function (topic) {
-	return {topic: topic, payload: _elm_lang$core$Maybe$Nothing, onRequestJoin: _elm_lang$core$Maybe$Nothing, onJoin: _elm_lang$core$Maybe$Nothing, onJoinError: _elm_lang$core$Maybe$Nothing, onDisconnect: _elm_lang$core$Maybe$Nothing, onError: _elm_lang$core$Maybe$Nothing, onRejoin: _elm_lang$core$Maybe$Nothing, onLeave: _elm_lang$core$Maybe$Nothing, onLeaveError: _elm_lang$core$Maybe$Nothing, on: _elm_lang$core$Dict$empty, onPresenceChange: _elm_lang$core$Maybe$Nothing, debug: false};
+	return {topic: topic, payload: _elm_lang$core$Maybe$Nothing, onRequestJoin: _elm_lang$core$Maybe$Nothing, onJoin: _elm_lang$core$Maybe$Nothing, onJoinError: _elm_lang$core$Maybe$Nothing, onDisconnect: _elm_lang$core$Maybe$Nothing, onError: _elm_lang$core$Maybe$Nothing, onRejoin: _elm_lang$core$Maybe$Nothing, onLeave: _elm_lang$core$Maybe$Nothing, onLeaveError: _elm_lang$core$Maybe$Nothing, on: _elm_lang$core$Dict$empty, presence: _elm_lang$core$Maybe$Nothing, debug: false};
 };
 var _user$project$Phoenix_Channel$PhoenixChannel = function (a) {
 	return function (b) {
@@ -9352,7 +9403,7 @@ var _user$project$Phoenix_Channel$PhoenixChannel = function (a) {
 										return function (k) {
 											return function (l) {
 												return function (m) {
-													return {topic: a, payload: b, onRequestJoin: c, onJoin: d, onJoinError: e, onDisconnect: f, onError: g, onRejoin: h, onLeave: i, onLeaveError: j, on: k, onPresenceChange: l, debug: m};
+													return {topic: a, payload: b, onRequestJoin: c, onJoin: d, onJoinError: e, onDisconnect: f, onError: g, onRejoin: h, onLeave: i, onLeaveError: j, on: k, presence: l, debug: m};
 												};
 											};
 										};
@@ -10305,28 +10356,34 @@ var _user$project$Phoenix$handlePhoenixMessage = F4(
 				if (_p46.ctor === 'Nothing') {
 					return _elm_lang$core$Task$succeed(state);
 				} else {
-					var _p49 = _p46._0;
+					var _p50 = _p46._0;
 					var newPresenceState = function () {
 						var _p47 = _user$project$Phoenix_Internal_Presence$decodePresenceState(message.payload);
 						if (_p47.ctor === 'Ok') {
 							return _p47._0;
 						} else {
-							return _p49.presenceState;
+							return _p50.presenceState;
 						}
 					}();
-					var updatedChannel = A2(_user$project$Phoenix_Internal_Channel$updatePresenceState, newPresenceState, _p49);
-					var updatedChannels = A4(_user$project$Phoenix_Internal_Helpers$insertIn, endpoint, _p49.channel.topic, updatedChannel, state.channels);
+					var updatedChannel = A2(_user$project$Phoenix_Internal_Channel$updatePresenceState, newPresenceState, _p50);
+					var updatedChannels = A4(_user$project$Phoenix_Internal_Helpers$insertIn, endpoint, _p50.channel.topic, updatedChannel, state.channels);
 					var sendToApp = function () {
-						var _p48 = _p49.channel.onPresenceChange;
+						var _p48 = _p50.channel.presence;
 						if (_p48.ctor === 'Nothing') {
 							return _elm_lang$core$Task$succeed(
 								{ctor: '_Tuple0'});
 						} else {
-							return A2(
-								_elm_lang$core$Platform$sendToApp,
-								router,
-								_p48._0(
-									_user$project$Phoenix_Internal_Presence$getPresenceState(newPresenceState)));
+							var _p49 = _p48._0.onChange;
+							if (_p49.ctor === 'Just') {
+								return A2(
+									_elm_lang$core$Platform$sendToApp,
+									router,
+									_p49._0(
+										_user$project$Phoenix_Internal_Presence$getPresenceState(newPresenceState)));
+							} else {
+								return _elm_lang$core$Task$succeed(
+									{ctor: '_Tuple0'});
+							}
 						}
 					}();
 					return A2(
@@ -10336,32 +10393,77 @@ var _user$project$Phoenix$handlePhoenixMessage = F4(
 							A2(_user$project$Phoenix$updateChannels, updatedChannels, state)));
 				}
 			case 'presence_diff':
-				var _p50 = A3(_user$project$Phoenix_Internal_Helpers$getIn, endpoint, message.topic, state.channels);
-				if (_p50.ctor === 'Nothing') {
+				var _p51 = A3(_user$project$Phoenix_Internal_Helpers$getIn, endpoint, message.topic, state.channels);
+				if (_p51.ctor === 'Nothing') {
 					return _elm_lang$core$Task$succeed(state);
 				} else {
-					var _p53 = _p50._0;
-					var newPresenceState = function () {
-						var _p51 = _user$project$Phoenix_Internal_Presence$decodePresenceDiff(message.payload);
-						if (_p51.ctor === 'Ok') {
-							return A2(_user$project$Phoenix_Internal_Presence$syncPresenceDiff, _p51._0, _p53.presenceState);
+					var _p59 = _p51._0;
+					var diffResult = function () {
+						var _p52 = _user$project$Phoenix_Internal_Presence$decodePresenceDiff(message.payload);
+						if (_p52.ctor === 'Ok') {
+							var _p53 = _p52._0;
+							var newState = A2(_user$project$Phoenix_Internal_Presence$syncPresenceDiff, _p53, _p59.presenceState);
+							return {
+								newState: newState,
+								joins: _elm_lang$core$Maybe$Just(_p53.joins),
+								leaves: _elm_lang$core$Maybe$Just(_p53.leaves)
+							};
 						} else {
-							return _p53.presenceState;
+							return {newState: _p59.presenceState, joins: _elm_lang$core$Maybe$Nothing, leaves: _elm_lang$core$Maybe$Nothing};
 						}
 					}();
-					var updatedChannel = A2(_user$project$Phoenix_Internal_Channel$updatePresenceState, newPresenceState, _p53);
-					var updatedChannels = A4(_user$project$Phoenix_Internal_Helpers$insertIn, endpoint, _p53.channel.topic, updatedChannel, state.channels);
+					var updatedChannel = A2(_user$project$Phoenix_Internal_Channel$updatePresenceState, diffResult.newState, _p59);
+					var updatedChannels = A4(_user$project$Phoenix_Internal_Helpers$insertIn, endpoint, _p59.channel.topic, updatedChannel, state.channels);
 					var sendToApp = function () {
-						var _p52 = _p53.channel.onPresenceChange;
-						if (_p52.ctor === 'Nothing') {
+						var _p54 = _p59.channel.presence;
+						if (_p54.ctor === 'Nothing') {
 							return _elm_lang$core$Task$succeed(
 								{ctor: '_Tuple0'});
 						} else {
+							var _p58 = _p54._0;
+							var sendOnChange = function () {
+								var _p55 = _p58.onChange;
+								if (_p55.ctor === 'Just') {
+									return A2(
+										_elm_lang$core$Platform$sendToApp,
+										router,
+										_p55._0(
+											_user$project$Phoenix_Internal_Presence$getPresenceState(diffResult.newState)));
+								} else {
+									return _elm_lang$core$Task$succeed(
+										{ctor: '_Tuple0'});
+								}
+							}();
+							var sendOnLeaves = function () {
+								var _p56 = {ctor: '_Tuple2', _0: _p58.onLeaves, _1: diffResult.leaves};
+								if ((_p56._0.ctor === 'Just') && (_p56._1.ctor === 'Just')) {
+									return A2(
+										_elm_lang$core$Platform$sendToApp,
+										router,
+										_p56._0._0(
+											_user$project$Phoenix_Internal_Presence$getPresenceState(_p56._1._0)));
+								} else {
+									return _elm_lang$core$Task$succeed(
+										{ctor: '_Tuple0'});
+								}
+							}();
+							var sendOnJoins = function () {
+								var _p57 = {ctor: '_Tuple2', _0: _p58.onJoins, _1: diffResult.joins};
+								if ((_p57._0.ctor === 'Just') && (_p57._1.ctor === 'Just')) {
+									return A2(
+										_elm_lang$core$Platform$sendToApp,
+										router,
+										_p57._0._0(
+											_user$project$Phoenix_Internal_Presence$getPresenceState(_p57._1._0)));
+								} else {
+									return _elm_lang$core$Task$succeed(
+										{ctor: '_Tuple0'});
+								}
+							}();
 							return A2(
-								_elm_lang$core$Platform$sendToApp,
-								router,
-								_p52._0(
-									_user$project$Phoenix_Internal_Presence$getPresenceState(newPresenceState)));
+								_user$project$Phoenix_Internal_Helpers_ops['&>'],
+								A2(_user$project$Phoenix_Internal_Helpers_ops['&>'], sendOnJoins, sendOnLeaves),
+								sendOnChange);
 						}
 					}();
 					return A2(
@@ -10371,21 +10473,21 @@ var _user$project$Phoenix$handlePhoenixMessage = F4(
 							A2(_user$project$Phoenix$updateChannels, updatedChannels, state)));
 				}
 			case 'phx_error':
-				var _p54 = A3(_user$project$Phoenix_Internal_Helpers$getIn, endpoint, message.topic, state.channels);
-				if (_p54.ctor === 'Nothing') {
+				var _p60 = A3(_user$project$Phoenix_Internal_Helpers$getIn, endpoint, message.topic, state.channels);
+				if (_p60.ctor === 'Nothing') {
 					return _elm_lang$core$Task$succeed(state);
 				} else {
-					var _p56 = _p54._0;
+					var _p62 = _p60._0;
 					var sendToApp = function () {
-						var _p55 = _p56.channel.onError;
-						if (_p55.ctor === 'Nothing') {
+						var _p61 = _p62.channel.onError;
+						if (_p61.ctor === 'Nothing') {
 							return _elm_lang$core$Task$succeed(
 								{ctor: '_Tuple0'});
 						} else {
-							return A2(_elm_lang$core$Platform$sendToApp, router, _p55._0);
+							return A2(_elm_lang$core$Platform$sendToApp, router, _p61._0);
 						}
 					}();
-					var newChannel = A2(_user$project$Phoenix_Internal_Channel$updateState, _user$project$Phoenix_Internal_Channel$Errored, _p56);
+					var newChannel = A2(_user$project$Phoenix_Internal_Channel$updateState, _user$project$Phoenix_Internal_Channel$Errored, _p62);
 					return A2(
 						_user$project$Phoenix_Internal_Helpers_ops['&>'],
 						sendToApp,
@@ -10407,14 +10509,14 @@ var _user$project$Phoenix$handlePhoenixMessage = F4(
 	});
 var _user$project$Phoenix$rejoinAllChannels = F2(
 	function (endpoint, state) {
-		var _p57 = A2(_elm_lang$core$Dict$get, endpoint, state.channels);
-		if (_p57.ctor === 'Nothing') {
+		var _p63 = A2(_elm_lang$core$Dict$get, endpoint, state.channels);
+		if (_p63.ctor === 'Nothing') {
 			return _elm_lang$core$Task$succeed(state);
 		} else {
 			return A3(
 				_user$project$Phoenix$sendJoinHelper,
 				endpoint,
-				_elm_lang$core$Dict$values(_p57._0),
+				_elm_lang$core$Dict$values(_p63._0),
 				state);
 		}
 	});
@@ -10428,8 +10530,8 @@ var _user$project$Phoenix$LeaveChannel = F2(
 	});
 var _user$project$Phoenix$sendLeaveChannel = F3(
 	function (router, endpoint, internalChannel) {
-		var _p58 = internalChannel.state;
-		if (_p58.ctor === 'Joined') {
+		var _p64 = internalChannel.state;
+		if (_p64.ctor === 'Joined') {
 			return A2(
 				_elm_lang$core$Platform$sendToSelf,
 				router,
@@ -10574,16 +10676,16 @@ var _user$project$Phoenix$Receive = F2(
 var _user$project$Phoenix$open = F2(
 	function (socket, router) {
 		var onMessage = F2(
-			function (_p59, msg) {
-				var _p60 = _user$project$Phoenix_Internal_Message$decode(msg);
-				if (_p60.ctor === 'Ok') {
+			function (_p65, msg) {
+				var _p66 = _user$project$Phoenix_Internal_Message$decode(msg);
+				if (_p66.ctor === 'Ok') {
 					return A2(
 						_elm_lang$core$Platform$sendToSelf,
 						router,
 						A2(
 							_user$project$Phoenix$Receive,
 							socket.socket.endpoint,
-							A2(_user$project$Phoenix_Internal_Socket$debugLogMessage, socket, _p60._0)));
+							A2(_user$project$Phoenix_Internal_Socket$debugLogMessage, socket, _p66._0)));
 				} else {
 					return _elm_lang$core$Task$succeed(
 						{ctor: '_Tuple0'});
@@ -10603,20 +10705,20 @@ var _user$project$Phoenix$open = F2(
 			});
 	});
 var _user$project$Phoenix$attemptOpen = F3(
-	function (router, backoff, _p61) {
-		var _p62 = _p61;
-		var _p63 = _p62.socket;
+	function (router, backoff, _p67) {
+		var _p68 = _p67;
+		var _p69 = _p68.socket;
 		var badOpen = function (details) {
 			return A2(
 				_elm_lang$core$Platform$sendToSelf,
 				router,
-				A2(_user$project$Phoenix$BadOpen, _p63.endpoint, details));
+				A2(_user$project$Phoenix$BadOpen, _p69.endpoint, details));
 		};
 		var goodOpen = function (ws) {
 			return A2(
 				_elm_lang$core$Platform$sendToSelf,
 				router,
-				A2(_user$project$Phoenix$GoodOpen, _p63.endpoint, ws));
+				A2(_user$project$Phoenix$GoodOpen, _p69.endpoint, ws));
 		};
 		var actuallyAttemptOpen = A2(
 			_elm_lang$core$Task$onError,
@@ -10624,7 +10726,7 @@ var _user$project$Phoenix$attemptOpen = F3(
 			A2(
 				_elm_lang$core$Task$andThen,
 				goodOpen,
-				A2(_user$project$Phoenix$open, _p62, router)));
+				A2(_user$project$Phoenix$open, _p68, router)));
 		return _elm_lang$core$Process$spawn(
 			A2(
 				_user$project$Phoenix_Internal_Helpers_ops['&>'],
@@ -10706,108 +10808,108 @@ var _user$project$Phoenix$onEffects = F4(
 	});
 var _user$project$Phoenix$onSelfMsg = F3(
 	function (router, selfMsg, state) {
-		var _p64 = selfMsg;
-		switch (_p64.ctor) {
+		var _p70 = selfMsg;
+		switch (_p70.ctor) {
 			case 'GoodOpen':
-				var _p68 = _p64._0;
-				var _p65 = A2(_user$project$Phoenix_Internal_Socket$get, _p68, state.sockets);
-				if (_p65.ctor === 'Just') {
-					var _p67 = _p65._0;
+				var _p74 = _p70._0;
+				var _p71 = A2(_user$project$Phoenix_Internal_Socket$get, _p74, state.sockets);
+				if (_p71.ctor === 'Just') {
+					var _p73 = _p71._0;
 					var state_ = A3(
 						_user$project$Phoenix$insertSocket,
-						_p68,
-						A2(_user$project$Phoenix_Internal_Socket$connected, _p64._1, _p67),
+						_p74,
+						A2(_user$project$Phoenix_Internal_Socket$connected, _p70._1, _p73),
 						state);
-					var notifyOnOpen = A2(_user$project$Phoenix$maybeNotifyApp, router, _p67.socket.onOpen);
-					var _p66 = _p67.socket.debug ? A2(_elm_lang$core$Debug$log, 'WebSocket connected with ', _p68) : _p68;
+					var notifyOnOpen = A2(_user$project$Phoenix$maybeNotifyApp, router, _p73.socket.onOpen);
+					var _p72 = _p73.socket.debug ? A2(_elm_lang$core$Debug$log, 'WebSocket connected with ', _p74) : _p74;
 					return A2(
 						_user$project$Phoenix_Internal_Helpers_ops['<&>'],
 						A2(
 							_user$project$Phoenix_Internal_Helpers_ops['&>'],
 							notifyOnOpen,
-							A3(_user$project$Phoenix$heartbeat, router, _p68, state_)),
-						_user$project$Phoenix$rejoinAllChannels(_p68));
+							A3(_user$project$Phoenix$heartbeat, router, _p74, state_)),
+						_user$project$Phoenix$rejoinAllChannels(_p74));
 				} else {
 					return _elm_lang$core$Task$succeed(state);
 				}
 			case 'BadOpen':
-				var _p74 = _p64._0;
-				var _p73 = _p64._1;
-				var _p69 = A2(_elm_lang$core$Dict$get, _p74, state.sockets);
-				if (_p69.ctor === 'Nothing') {
-					return _elm_lang$core$Task$succeed(state);
-				} else {
-					var _p72 = _p69._0;
-					var backoffIteration = function () {
-						var _p70 = _p72.connection;
-						if (_p70.ctor === 'Opening') {
-							return _p70._0 + 1;
-						} else {
-							return 0;
-						}
-					}();
-					var backoff = _p72.socket.reconnectTimer(backoffIteration);
-					var newState = function (pid) {
-						return A3(
-							_user$project$Phoenix$updateSocket,
-							_p74,
-							A3(_user$project$Phoenix_Internal_Socket$opening, backoffIteration, pid, _p72),
-							state);
-					};
-					var _p71 = _p72.socket.debug ? A2(
-						_elm_lang$core$Debug$log,
-						A2(_elm_lang$core$Basics_ops['++'], 'WebSocket couldn_t connect with ', _p74),
-						_p73) : _p73;
-					return A2(
-						_elm_lang$core$Task$map,
-						newState,
-						A3(_user$project$Phoenix$attemptOpen, router, backoff, _p72));
-				}
-			case 'Die':
-				var _p80 = _p64._0;
-				var _p79 = _p64._1;
+				var _p80 = _p70._0;
+				var _p79 = _p70._1;
 				var _p75 = A2(_elm_lang$core$Dict$get, _p80, state.sockets);
 				if (_p75.ctor === 'Nothing') {
 					return _elm_lang$core$Task$succeed(state);
 				} else {
-					var _p78 = _p75._0.socket;
-					var _p77 = _p75._0;
-					var notifyOnNormalClose = _elm_lang$core$Native_Utils.eq(_p79.code, 1000) ? A2(_user$project$Phoenix$maybeNotifyApp, router, _p78.onNormalClose) : _elm_lang$core$Task$succeed(
-						{ctor: '_Tuple0'});
-					var notifyOnClose = A2(
-						_user$project$Phoenix$maybeNotifyApp,
-						router,
-						A2(
-							_user$project$Phoenix$maybeAndMap,
-							_elm_lang$core$Maybe$Just(_p79),
-							_p78.onClose));
-					var getNewState = A3(_user$project$Phoenix$handleChannelDisconnect, router, _p80, state);
+					var _p78 = _p75._0;
 					var backoffIteration = function () {
-						var _p76 = _p75._0.connection;
+						var _p76 = _p78.connection;
 						if (_p76.ctor === 'Opening') {
 							return _p76._0 + 1;
 						} else {
 							return 0;
 						}
 					}();
-					var backoff = _p78.reconnectTimer(backoffIteration);
+					var backoff = _p78.socket.reconnectTimer(backoffIteration);
+					var newState = function (pid) {
+						return A3(
+							_user$project$Phoenix$updateSocket,
+							_p80,
+							A3(_user$project$Phoenix_Internal_Socket$opening, backoffIteration, pid, _p78),
+							state);
+					};
+					var _p77 = _p78.socket.debug ? A2(
+						_elm_lang$core$Debug$log,
+						A2(_elm_lang$core$Basics_ops['++'], 'WebSocket couldn_t connect with ', _p80),
+						_p79) : _p79;
+					return A2(
+						_elm_lang$core$Task$map,
+						newState,
+						A3(_user$project$Phoenix$attemptOpen, router, backoff, _p78));
+				}
+			case 'Die':
+				var _p86 = _p70._0;
+				var _p85 = _p70._1;
+				var _p81 = A2(_elm_lang$core$Dict$get, _p86, state.sockets);
+				if (_p81.ctor === 'Nothing') {
+					return _elm_lang$core$Task$succeed(state);
+				} else {
+					var _p84 = _p81._0.socket;
+					var _p83 = _p81._0;
+					var notifyOnNormalClose = _elm_lang$core$Native_Utils.eq(_p85.code, 1000) ? A2(_user$project$Phoenix$maybeNotifyApp, router, _p84.onNormalClose) : _elm_lang$core$Task$succeed(
+						{ctor: '_Tuple0'});
+					var notifyOnClose = A2(
+						_user$project$Phoenix$maybeNotifyApp,
+						router,
+						A2(
+							_user$project$Phoenix$maybeAndMap,
+							_elm_lang$core$Maybe$Just(_p85),
+							_p84.onClose));
+					var getNewState = A3(_user$project$Phoenix$handleChannelDisconnect, router, _p86, state);
+					var backoffIteration = function () {
+						var _p82 = _p81._0.connection;
+						if (_p82.ctor === 'Opening') {
+							return _p82._0 + 1;
+						} else {
+							return 0;
+						}
+					}();
+					var backoff = _p84.reconnectTimer(backoffIteration);
 					var finalNewState = function (pid) {
 						return A2(
 							_elm_lang$core$Task$map,
 							A2(
 								_user$project$Phoenix$updateSocket,
-								_p80,
-								A3(_user$project$Phoenix_Internal_Socket$opening, backoffIteration, pid, _p77)),
+								_p86,
+								A3(_user$project$Phoenix_Internal_Socket$opening, backoffIteration, pid, _p83)),
 							getNewState);
 					};
-					var notifyOnAbnormalClose = _elm_lang$core$Native_Utils.eq(_p79.code, 1006) ? A2(
+					var notifyOnAbnormalClose = _elm_lang$core$Native_Utils.eq(_p85.code, 1006) ? A2(
 						_user$project$Phoenix$maybeNotifyApp,
 						router,
 						A2(
 							_user$project$Phoenix$maybeAndMap,
 							_elm_lang$core$Maybe$Just(
 								{reconnectAttempt: backoffIteration, reconnectWait: backoff}),
-							_p78.onAbnormalClose)) : _elm_lang$core$Task$succeed(
+							_p84.onAbnormalClose)) : _elm_lang$core$Task$succeed(
 						{ctor: '_Tuple0'});
 					return A2(
 						_elm_lang$core$Task$andThen,
@@ -10818,80 +10920,80 @@ var _user$project$Phoenix$onSelfMsg = F3(
 								_user$project$Phoenix_Internal_Helpers_ops['&>'],
 								A2(_user$project$Phoenix_Internal_Helpers_ops['&>'], notifyOnClose, notifyOnNormalClose),
 								notifyOnAbnormalClose),
-							A3(_user$project$Phoenix$attemptOpen, router, backoff, _p77)));
+							A3(_user$project$Phoenix$attemptOpen, router, backoff, _p83)));
 				}
 			case 'Receive':
-				var _p82 = _p64._1;
-				var _p81 = _p64._0;
+				var _p88 = _p70._1;
+				var _p87 = _p70._0;
 				return A2(
 					_user$project$Phoenix_Internal_Helpers_ops['<&>'],
 					A2(
 						_user$project$Phoenix_Internal_Helpers_ops['&>'],
-						A4(_user$project$Phoenix$dispatchMessage, router, _p81, _p82, state.channels),
+						A4(_user$project$Phoenix$dispatchMessage, router, _p87, _p88, state.channels),
 						A2(
 							_elm_lang$core$Task$map,
 							function (selfCbs) {
 								return A2(_user$project$Phoenix$updateSelfCallbacks, selfCbs, state);
 							},
-							A4(_user$project$Phoenix$handleSelfcallback, router, _p81, _p82, state.selfCallbacks))),
-					A3(_user$project$Phoenix$handlePhoenixMessage, router, _p81, _p82));
+							A4(_user$project$Phoenix$handleSelfcallback, router, _p87, _p88, state.selfCallbacks))),
+					A3(_user$project$Phoenix$handlePhoenixMessage, router, _p87, _p88));
 			case 'ChannelJoinReply':
 				return A2(
 					_elm_lang$core$Task$map,
 					function (newChannels) {
 						return A2(_user$project$Phoenix$updateChannels, newChannels, state);
 					},
-					A6(_user$project$Phoenix$handleChannelJoinReply, router, _p64._0, _p64._1, _p64._3, _p64._2, state.channels));
+					A6(_user$project$Phoenix$handleChannelJoinReply, router, _p70._0, _p70._1, _p70._3, _p70._2, state.channels));
 			case 'JoinChannel':
-				var _p86 = _p64._1;
-				var _p85 = _p64._0;
-				var _p83 = A2(_elm_lang$core$Dict$get, _p85, state.sockets);
-				if (_p83.ctor === 'Nothing') {
+				var _p92 = _p70._1;
+				var _p91 = _p70._0;
+				var _p89 = A2(_elm_lang$core$Dict$get, _p91, state.sockets);
+				if (_p89.ctor === 'Nothing') {
 					return _elm_lang$core$Task$succeed(state);
 				} else {
-					var _p84 = _p83._0.connection;
-					if (_p84.ctor === 'Connected') {
+					var _p90 = _p89._0.connection;
+					if (_p90.ctor === 'Connected') {
 						return A4(
 							_user$project$Phoenix$pushSocket_,
-							_p85,
-							_user$project$Phoenix_Internal_Channel$joinMessage(_p86),
+							_p91,
+							_user$project$Phoenix_Internal_Channel$joinMessage(_p92),
 							_elm_lang$core$Maybe$Just(
-								A3(_user$project$Phoenix$ChannelJoinReply, _p85, _p86.channel.topic, _p86.state)),
+								A3(_user$project$Phoenix$ChannelJoinReply, _p91, _p92.channel.topic, _p92.state)),
 							state);
 					} else {
 						return _elm_lang$core$Task$succeed(state);
 					}
 				}
 			case 'LeaveChannel':
-				var _p90 = _p64._1;
-				var _p89 = _p64._0;
-				var _p87 = A2(_elm_lang$core$Dict$get, _p89, state.sockets);
-				if (_p87.ctor === 'Nothing') {
+				var _p96 = _p70._1;
+				var _p95 = _p70._0;
+				var _p93 = A2(_elm_lang$core$Dict$get, _p95, state.sockets);
+				if (_p93.ctor === 'Nothing') {
 					return _elm_lang$core$Task$succeed(state);
 				} else {
-					var _p88 = _p90.state;
-					if (_p88.ctor === 'Joined') {
+					var _p94 = _p96.state;
+					if (_p94.ctor === 'Joined') {
 						return A4(
 							_user$project$Phoenix$pushSocket_,
-							_p89,
-							_user$project$Phoenix_Internal_Channel$leaveMessage(_p90),
+							_p95,
+							_user$project$Phoenix_Internal_Channel$leaveMessage(_p96),
 							_elm_lang$core$Maybe$Just(
-								A2(_user$project$Phoenix$ChannelLeaveReply, _p89, _p90)),
+								A2(_user$project$Phoenix$ChannelLeaveReply, _p95, _p96)),
 							state);
 					} else {
 						return _elm_lang$core$Task$succeed(state);
 					}
 				}
 			case 'ChannelLeaveReply':
-				var _p95 = _p64._1.channel;
-				var _p91 = _user$project$Phoenix_Internal_Helpers$decodeReplyPayload(_p64._2.payload);
-				if (_p91.ctor === 'Nothing') {
+				var _p101 = _p70._1.channel;
+				var _p97 = _user$project$Phoenix_Internal_Helpers$decodeReplyPayload(_p70._2.payload);
+				if (_p97.ctor === 'Nothing') {
 					return _elm_lang$core$Task$succeed(state);
 				} else {
-					var _p92 = _p91._0;
-					if (_p92.ctor === 'Err') {
-						var _p93 = _p95.onLeaveError;
-						if (_p93.ctor === 'Nothing') {
+					var _p98 = _p97._0;
+					if (_p98.ctor === 'Err') {
+						var _p99 = _p101.onLeaveError;
+						if (_p99.ctor === 'Nothing') {
 							return _elm_lang$core$Task$succeed(state);
 						} else {
 							return A2(
@@ -10899,12 +11001,12 @@ var _user$project$Phoenix$onSelfMsg = F3(
 								A2(
 									_elm_lang$core$Platform$sendToApp,
 									router,
-									_p93._0(_p92._0)),
+									_p99._0(_p98._0)),
 								_elm_lang$core$Task$succeed(state));
 						}
 					} else {
-						var _p94 = _p95.onLeave;
-						if (_p94.ctor === 'Nothing') {
+						var _p100 = _p101.onLeave;
+						if (_p100.ctor === 'Nothing') {
 							return _elm_lang$core$Task$succeed(state);
 						} else {
 							return A2(
@@ -10912,35 +11014,35 @@ var _user$project$Phoenix$onSelfMsg = F3(
 								A2(
 									_elm_lang$core$Platform$sendToApp,
 									router,
-									_p94._0(_p92._0)),
+									_p100._0(_p98._0)),
 								_elm_lang$core$Task$succeed(state));
 						}
 					}
 				}
 			case 'SendHeartbeat':
-				return A3(_user$project$Phoenix$heartbeat, router, _p64._0, state);
+				return A3(_user$project$Phoenix$heartbeat, router, _p70._0, state);
 			case 'GoodJoin':
-				var _p98 = _p64._1;
-				var _p97 = _p64._0;
-				var _p96 = A3(_user$project$Phoenix_Internal_Helpers$getIn, _p97, _p98, state.channelQueues);
-				if (_p96.ctor === 'Nothing') {
+				var _p104 = _p70._1;
+				var _p103 = _p70._0;
+				var _p102 = A3(_user$project$Phoenix_Internal_Helpers$getIn, _p103, _p104, state.channelQueues);
+				if (_p102.ctor === 'Nothing') {
 					return _elm_lang$core$Task$succeed(state);
 				} else {
 					return A2(
 						_elm_lang$core$Task$map,
-						A2(_user$project$Phoenix$removeChannelQueue, _p97, _p98),
-						A3(_user$project$Phoenix$processQueue, _p97, _p96._0, state));
+						A2(_user$project$Phoenix$removeChannelQueue, _p103, _p104),
+						A3(_user$project$Phoenix$processQueue, _p103, _p102._0, state));
 				}
 			case 'PushResponse':
-				var _p103 = _p64._0;
-				var _p99 = _user$project$Phoenix_Internal_Helpers$decodeReplyPayload(_p64._1.payload);
-				if (_p99.ctor === 'Nothing') {
+				var _p109 = _p70._0;
+				var _p105 = _user$project$Phoenix_Internal_Helpers$decodeReplyPayload(_p70._1.payload);
+				if (_p105.ctor === 'Nothing') {
 					return _elm_lang$core$Task$succeed(state);
 				} else {
-					var _p100 = _p99._0;
-					if (_p100.ctor === 'Err') {
-						var _p101 = _p103.onError;
-						if (_p101.ctor === 'Nothing') {
+					var _p106 = _p105._0;
+					if (_p106.ctor === 'Err') {
+						var _p107 = _p109.onError;
+						if (_p107.ctor === 'Nothing') {
 							return _elm_lang$core$Task$succeed(state);
 						} else {
 							return A2(
@@ -10948,12 +11050,12 @@ var _user$project$Phoenix$onSelfMsg = F3(
 								A2(
 									_elm_lang$core$Platform$sendToApp,
 									router,
-									_p101._0(_p100._0)),
+									_p107._0(_p106._0)),
 								_elm_lang$core$Task$succeed(state));
 						}
 					} else {
-						var _p102 = _p103.onOk;
-						if (_p102.ctor === 'Nothing') {
+						var _p108 = _p109.onOk;
+						if (_p108.ctor === 'Nothing') {
 							return _elm_lang$core$Task$succeed(state);
 						} else {
 							return A2(
@@ -10961,7 +11063,7 @@ var _user$project$Phoenix$onSelfMsg = F3(
 								A2(
 									_elm_lang$core$Platform$sendToApp,
 									router,
-									_p102._0(_p100._0)),
+									_p108._0(_p106._0)),
 								_elm_lang$core$Task$succeed(state));
 						}
 					}
@@ -11139,7 +11241,7 @@ var _user$project$Chat$decodeNewMsg = A3(
 	A2(_elm_lang$core$Json_Decode$field, 'msg', _elm_lang$core$Json_Decode$string));
 var _user$project$Chat$update = F2(
 	function (message, model) {
-		var _p4 = A2(_elm_lang$core$Debug$log, 'update', message);
+		var _p4 = message;
 		switch (_p4.ctor) {
 			case 'UpdateUserName':
 				return A2(
@@ -11229,7 +11331,9 @@ var _user$project$Chat$update = F2(
 					_elm_lang$core$Platform_Cmd_ops['!'],
 					_elm_lang$core$Native_Utils.update(
 						model,
-						{presence: _p4._0}),
+						{
+							presence: A2(_elm_lang$core$Debug$log, 'presenceState ', _p4._0)
+						}),
 					{ctor: '[]'});
 			case 'SocketClosedAbnormally':
 				return A2(
@@ -11447,12 +11551,11 @@ var _user$project$Chat$UpdateState = function (a) {
 	return {ctor: 'UpdateState', _0: a};
 };
 var _user$project$Chat$lobby = function (userName) {
+	var presence = A2(_user$project$Phoenix_Presence$onChange, _user$project$Chat$UpdatePresence, _user$project$Phoenix_Presence$create);
 	return _user$project$Phoenix_Channel$withDebug(
 		A2(
-			_user$project$Phoenix_Channel$onPresenceChange,
-			function (presenceState) {
-				return _user$project$Chat$UpdatePresence(presenceState);
-			},
+			_user$project$Phoenix_Channel$withPresence,
+			presence,
 			A3(
 				_user$project$Phoenix_Channel$on,
 				'new_msg',

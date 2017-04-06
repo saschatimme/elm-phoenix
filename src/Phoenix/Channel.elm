@@ -12,7 +12,7 @@ module Phoenix.Channel
         , on
         , onLeave
         , onLeaveError
-        , onPresenceChange
+        , withPresence
         , withDebug
         , map
         )
@@ -24,12 +24,13 @@ module Phoenix.Channel
 
 # Helpers
 @docs init, withPayload, on, onJoin, onRequestJoin, onJoinError, onError, onDisconnect, onRejoin, onLeave, onLeaveError, withDebug, map
-@docs init, withPayload, on, onJoin, onRequestJoin, onJoinError, onError, onDisconnect, onRejoin, onLeave, onLeaveError, onPresenceChange, withDebug, map
+@docs init, withPayload, on, onJoin, onRequestJoin, onJoinError, onError, onDisconnect, onRejoin, onLeave, onLeaveError, withDebug, withPresence, map
 
 -}
 
 import Dict exposing (Dict)
 import Json.Decode as Decode exposing (Value)
+import Phoenix.Presence as Presence exposing (Presence)
 
 
 -- CHANNEL
@@ -53,7 +54,7 @@ type alias PhoenixChannel msg =
     , onLeave : Maybe (Value -> msg)
     , onLeaveError : Maybe (Value -> msg)
     , on : Dict String (Value -> msg)
-    , onPresenceChange : Maybe (Dict String (List Value) -> msg)
+    , presence : Maybe (Presence msg)
     , debug : Bool
     }
 
@@ -75,7 +76,7 @@ init topic =
     , onLeave = Nothing
     , onLeaveError = Nothing
     , on = Dict.empty
-    , onPresenceChange = Nothing
+    , presence = Nothing
     , debug = False
     }
 
@@ -221,9 +222,9 @@ onLeaveError onLeaveError_ chan =
     init "room:lobby"
         |> onPresenceChange PresenceChange
 -}
-onPresenceChange : (Dict String (List Value) -> msg) -> Channel msg -> Channel msg
-onPresenceChange onPresenceChange_ chan =
-    { chan | onPresenceChange = Just onPresenceChange_ }
+withPresence : Presence msg -> Channel msg -> Channel msg
+withPresence presence chan =
+    { chan | presence = Just presence }
 
 
 {-| Composes each callback with the function `a -> b`.
@@ -244,7 +245,7 @@ map func chan =
                 , onRejoin = f chan.onRejoin
                 , onLeave = f chan.onLeave
                 , onLeaveError = f chan.onLeaveError
-                , onPresenceChange = f chan.onPresenceChange
+                , presence = Maybe.map (Presence.map func) chan.presence
                 , on = Dict.map (\_ a -> func << a) chan.on
             }
     in
