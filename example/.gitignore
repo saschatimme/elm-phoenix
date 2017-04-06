@@ -14,7 +14,8 @@ erl_crash.dump
 # we ignore priv/static. You may want to comment
 # this depending on your deployment strategy.
 /priv/static/
-/web/elm/elm-stuff/
+/assets/elm/elm-stuff/
+/assets/node_modules/
 /static/vendor/
 /web/static/vendor/chat.js
 # The config/prod.secret.exs file by default contains sensitive

@@ -1,11 +1,11 @@
-defmodule ElmPhoenix.ChannelCase do
+defmodule ElmPhoenix.Web.ChannelCase do
   @moduledoc """
   This module defines the test case to be used by
   channel tests.
 
   Such tests rely on `Phoenix.ChannelTest` and also
-  imports other functionality to make it easier
-  to build and query models.
+  import other functionality to make it easier
+  to build common datastructures and query the data layer.
 
   Finally, if the test case interacts with the database,
   it cannot be async. For this reason, every test runs
@@ -20,22 +20,14 @@ defmodule ElmPhoenix.ChannelCase do
       # Import conveniences for testing with channels
       use Phoenix.ChannelTest
 
-      alias ElmPhoenix.Repo
-      import Ecto
-      import Ecto.Changeset
-      import Ecto.Query, only: [from: 1, from: 2]
-
-
       # The default endpoint for testing
-      @endpoint ElmPhoenix.Endpoint
+      @endpoint ElmPhoenix.Web.Endpoint
     end
   end
 
-  setup tags do
-    unless tags[:async] do
-      Ecto.Adapters.SQL.restart_test_transaction(ElmPhoenix.Repo, [])
-    end
 
+  setup _tags do
     :ok
   end
+
 end
