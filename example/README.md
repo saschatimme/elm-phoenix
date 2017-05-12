@@ -1,7 +1,7 @@
 # Elm-Phoenix chat example
 
-The Elm code can be found [here](https://github.com/saschatimme/elm-phoenix/tree/master/example/web/elm/src/Chat.elm).
-The Channel code can be found [here](https://github.com/saschatimme/elm-phoenix/tree/master/example/web/channels/room_channel.ex).
+The Elm code can be found [here](https://github.com/saschatimme/elm-phoenix/tree/master/example/assets/elm/src/Chat.elm).
+The Channel code can be found [here](https://github.com/saschatimme/elm-phoenix/blob/master/example/lib/elm_phoenix/web/channels/room_channel.ex).
 
 
 To start your Phoenix app:
