@@ -48,7 +48,7 @@ and install the package with `elm-github-install`.
 The last compatible version with Elm 0.17 is `0.1.0`.
 
 ## Documentation
-You can find the documentation [here](https://saschatimme.github.io/elm-phoenix).
+You can find the documentation [here](https://saschatimme.github.io/elm-phoenix) (currently Phoenix.Presence is missing).
 
 ## Example
 A simple example chat application can be found [here](https://github.com/saschatimme/elm-phoenix/tree/master/example).
@@ -57,7 +57,7 @@ A simple example chat application can be found [here](https://github.com/saschat
 Contributions are welcome! If you get stuck or don't understand some details just get in touch.
 If you want to contribute but don't know what here are some ideas:
 
-- Improve the example app
+- Add [Long Poll](https://github.com/saschatimme/elm-phoenix/issues/29) support
 
 ## Feedback
 If you use the package in your project, I would love to hear how your experience is and if you have some ideas for improvements!
