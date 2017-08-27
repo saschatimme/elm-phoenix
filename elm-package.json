@@ -10,7 +10,8 @@
         "Phoenix",
         "Phoenix.Channel",
         "Phoenix.Socket",
-        "Phoenix.Push"
+        "Phoenix.Push",
+        "Phoenix.Presence"
     ],
     "dependencies": {
         "elm-lang/websocket": "1.0.1 <= v < 2.0.0",
