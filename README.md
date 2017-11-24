@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/saschatimme/elm-phoenix.svg?branch=master)](https://travis-ci.org/saschatimme/elm-phoenix)
+
 # elm-phoenix
 
 An Elm client for [Phoenix](http://www.phoenixframework.org) Channels.
