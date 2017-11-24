@@ -11,6 +11,9 @@ cache:
 os:
   - linux
 
+notifications:
+  email: false
+
 env: ELM_VERSION=0.18.0
 
 before_install:
