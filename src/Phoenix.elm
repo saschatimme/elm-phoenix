@@ -4,12 +4,14 @@ effect module Phoenix where { command = MyCmd, subscription = MySub } exposing (
 
 This package makes it easy to connect to Phoenix Channels, but in a more declarative manner than the Phoenix Socket Javascript library. Simply provide a `Socket` and a list of `Channel`s you want to join and this library handles the tedious parts like opening a connection, joining channels, reconnecting after a network error and registering event handlers.
 
-
 #Connect with Phoenix
 @docs connect
 
+
 # Push messages
+
 @docs push
+
 -}
 
 import Json.Encode as Encode exposing (Value)
@@ -54,6 +56,7 @@ type MySub msg
         connect socket [channel]
 
 **Note**: An empty channel list keeps the socket connection open.
+
 -}
 connect : Socket msg -> List (Channel msg) -> Sub msg
 connect socket channels =
@@ -79,8 +82,8 @@ type MyCmd msg
 
     push "ws://localhost:4000/socket/websocket" message
 
-
 **Note**: The message will be queued until you successfully joined a channel to the topic of the message.
+
 -}
 push : String -> Push msg -> Cmd msg
 push endpoint push_ =
@@ -118,7 +121,7 @@ type alias Message =
 type alias State msg =
     { sockets : InternalSocketsDict msg
     , channels : InternalChannelsDict msg
-    , selfCallbacks : Dict Ref (SelfCallback msg)
+    , selfCallbacks : SelfCallbackDict msg
     , channelQueues : ChannelQueuesDict msg
     }
 
@@ -145,6 +148,10 @@ type alias EndpointSubsDict msg =
 
 type alias ChannelQueuesDict msg =
     Dict Endpoint (Dict Topic (List ( Message, Maybe (SelfCallback msg) )))
+
+
+type alias SelfCallbackDict msg =
+    Dict ( Ref, Endpoint ) (SelfCallback msg)
 
 
 type alias Callback msg =
@@ -372,7 +379,7 @@ updateChannels channels state =
     { state | channels = channels }
 
 
-updateSelfCallbacks : Dict Ref (SelfCallback msg) -> State msg -> State msg
+updateSelfCallbacks : SelfCallbackDict msg -> State msg -> State msg
 updateSelfCallbacks selfCallbacks state =
     { state | selfCallbacks = selfCallbacks }
 
@@ -389,15 +396,15 @@ insertSocket endpoint socket state =
     }
 
 
-insertSelfCallback : Ref -> Maybe (SelfCallback msg) -> State msg -> State msg
-insertSelfCallback ref maybeSelfCb state =
+insertSelfCallback : ( Ref, Endpoint ) -> Maybe (SelfCallback msg) -> State msg -> State msg
+insertSelfCallback ( ref, endpoint ) maybeSelfCb state =
     case maybeSelfCb of
         Nothing ->
             state
 
         Just selfCb ->
             { state
-                | selfCallbacks = Dict.insert ref selfCb state.selfCallbacks
+                | selfCallbacks = Dict.insert ( ref, endpoint ) selfCb state.selfCallbacks
             }
 
 
@@ -633,20 +640,20 @@ onSelfMsg router selfMsg state =
             Task.succeed state
 
 
-handleSelfcallback : Platform.Router msg (Msg msg) -> Endpoint -> Message -> Dict Ref (SelfCallback msg) -> Task x (Dict Ref (SelfCallback msg))
+handleSelfcallback : Platform.Router msg (Msg msg) -> Endpoint -> Message -> SelfCallbackDict msg -> Task x (SelfCallbackDict msg)
 handleSelfcallback router endpoint message selfCallbacks =
     case message.ref of
         Nothing ->
             Task.succeed selfCallbacks
 
         Just ref ->
-            case Dict.get ref selfCallbacks of
+            case Dict.get ( ref, endpoint ) selfCallbacks of
                 Nothing ->
                     Task.succeed selfCallbacks
 
                 Just selfCb ->
                     Platform.sendToSelf router (selfCb message)
-                        &> Task.succeed (Dict.remove ref selfCallbacks)
+                        &> Task.succeed (Dict.remove ( ref, endpoint ) selfCallbacks)
 
 
 processQueue : Endpoint -> List ( Message, Maybe (SelfCallback msg) ) -> State msg -> Task x (State msg)
@@ -968,7 +975,7 @@ pushSocket_ endpoint message maybeSelfCb state =
 
                             Just ref ->
                                 insertSocket endpoint (InternalSocket.increaseRef socket) state
-                                    |> insertSelfCallback ref maybeSelfCb
+                                    |> insertSelfCallback ( ref, endpoint ) maybeSelfCb
                                     |> Task.succeed
 
 
@@ -990,7 +997,7 @@ pushSocket endpoint message selfCb state =
 
                 Just ref ->
                     insertSocket endpoint (InternalSocket.increaseRef socket) state
-                        |> insertSelfCallback ref selfCb
+                        |> insertSelfCallback ( ref, endpoint ) selfCb
                         |> Task.succeed
     in
         case Dict.get endpoint state.sockets of
