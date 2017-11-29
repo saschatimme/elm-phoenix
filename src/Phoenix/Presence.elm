@@ -2,12 +2,16 @@ module Phoenix.Presence exposing (Presence, create, onChange, onJoins, onLeaves,
 
 {-| Presence is an extension for channels to support the Presence feature of Phoenix.
 
+
 # Definition
+
 @docs Presence
 
+
 # Helpers
-@docs init, withPayload, on, onJoin, onRequestJoin, onJoinError, onError, onDisconnect, onRejoin, onLeave, onLeaveError, withDebug, map
-@docs init, withPayload, on, onJoin, onRequestJoin, onJoinError, onError, onDisconnect, onRejoin, onLeave, onLeaveError, withDebug, withPresence, map
+
+@docs create, onChange, onJoins, onLeaves, map
+
 -}
 
 import Dict exposing (Dict)
@@ -48,7 +52,6 @@ then an example would be a Dict with
     { "user1": [{online_at: 1491493666123}]
     , "user2": [{online_at: 1491492646123}, {online_at: 1491492646624}]
     }
-
 
 -}
 onChange : (Dict String (List Value) -> msg) -> PhoenixPresence msg -> PhoenixPresence msg
