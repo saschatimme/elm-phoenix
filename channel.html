@@ -11,18 +11,23 @@
 </head>
 
 <body>
-    
+
     <div class="center">
         <div class="entry-list"><h1 class="entry-list-title">Phoenix.Channel</h1><span class="markdown-entry"><div><p> A channel declares which topic should be joined, registers event handlers and has various callbacks for possible lifecycle events.</p>
 <h1 id="definition">Definition</h1>
-</div></span><div class="docs-entry" id="Channel"><div class="docs-annotation"><span class="hljs-keyword">type</span> <span class="hljs-keyword">alias</span> <a href="#Channel" style="font-weight: bold;">Channel</a> msg <span>=</span> 
+</div></span><div class="docs-entry" id="Channel"><div class="docs-annotation"><span class="hljs-keyword">type</span> <span class="hljs-keyword">alias</span> <a href="#Channel" style="font-weight: bold;">Channel</a> msg <span>=</span>
     PhoenixChannel msg</div><div class="docs-comment"><div><p> Representation of a Phoenix Channel</p>
 </div></div></div><span class="markdown-entry"><div><h1 id="helpers">Helpers</h1>
 </div></span><div class="docs-entry" id="init"><div class="docs-annotation"><a href="#init" style="font-weight: bold;">init</a> <span>:</span> String <span>-&gt;</span> <a href="#Channel">Channel</a> msg</div><div class="docs-comment"><div><p> Initialize a channel to a given topic.</p>
 <pre><code><span class="hljs-title">init</span> <span class="hljs-string">"room:lobby"</span>
 </code></pre></div></div></div><div class="docs-entry" id="withPayload"><div class="docs-annotation"><a href="#withPayload" style="font-weight: bold;">withPayload</a> <span>:</span> Value <span>-&gt;</span> <a href="#Channel">Channel</a> msg <span>-&gt;</span> <a href="#Channel">Channel</a> msg</div><div class="docs-comment"><div><p> Attach a payload to the join message. You can use this to submit e.g. a user id or authentication infos. This will be the second argument in your <code>join/3</code> callback on the server.</p>
 <pre><code><span class="hljs-title">payload</span> =
-    <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.object [(<span class="hljs-string">"user_id"</span>, <span class="hljs-string">"123"</span>)]
+    <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.object
+      [
+        ( <span class="hljs-string">"user_id"</span>
+        , <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.string <span class="hljs-string">"123"</span>
+        )
+      ]
 
 <span class="hljs-title">init</span> <span class="hljs-string">"room:lobby"</span>
     |&gt; withPayload payload
