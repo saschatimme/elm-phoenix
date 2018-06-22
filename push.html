@@ -42,7 +42,11 @@
 <pre><code><span class="hljs-typedef"><span class="hljs-keyword">type</span> <span class="hljs-type">Msg</span> = <span class="hljs-type">MessageArrived</span> | ...</span>
 
 <span class="hljs-title">payload</span> =
-    <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.object [(<span class="hljs-string">"msg"</span>, <span class="hljs-string">"Hello Phoenix"</span>)]
+    <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.object
+    [ ( <span class="hljs-string">"msg"</span>
+      , <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.string <span class="hljs-string">"Hello Phoenix"</span>
+      )
+    ]
 
 <span class="hljs-title">init</span> <span class="hljs-string">"room:lobby"</span> <span class="hljs-string">"new_msg"</span>
     |&gt; withPayload
@@ -51,7 +55,11 @@
 <pre><code><span class="hljs-typedef"><span class="hljs-keyword">type</span> <span class="hljs-type">Msg</span> = <span class="hljs-type">MessageFailed</span> <span class="hljs-type">Value</span> | ...</span>
 
 <span class="hljs-title">payload</span> =
-    <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.object [(<span class="hljs-string">"msg"</span>, <span class="hljs-string">"Hello Phoenix"</span>)]
+    <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.object
+    [ ( <span class="hljs-string">"msg"</span>
+      , <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.string <span class="hljs-string">"Hello Phoenix"</span>
+      )
+    ]
 
 <span class="hljs-title">init</span> <span class="hljs-string">"room:lobby"</span> <span class="hljs-string">"new_msg"</span>
     |&gt; withPayload
