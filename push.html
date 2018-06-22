@@ -10,14 +10,14 @@
     <link rel="stylesheet" href="./style.css">
 </head>
 
-<body>    
+<body>
     <div class="center">
-    
 
-    
+
+
     <div class="entry-list"><h1 class="entry-list-title">Phoenix.Push</h1><span class="markdown-entry"><div><p> A message to push informations to a channel.</p>
 <h1 id="definition">Definition</h1>
-</div></span><div class="docs-entry" id="Push"><div class="docs-annotation"><span class="hljs-keyword">type</span> <span class="hljs-keyword">alias</span> <a href="#Push" style="font-weight: bold;">Push</a> msg <span>=</span> 
+</div></span><div class="docs-entry" id="Push"><div class="docs-annotation"><span class="hljs-keyword">type</span> <span class="hljs-keyword">alias</span> <a href="#Push" style="font-weight: bold;">Push</a> msg <span>=</span>
     { topic <span>:</span> String
     , event <span>:</span> String
     , payload <span>:</span> Value
@@ -30,7 +30,11 @@
 <pre><code><span class="hljs-title">init</span> <span class="hljs-string">"room:lobby"</span> <span class="hljs-string">"new_msg"</span>
 </code></pre></div></div></div><div class="docs-entry" id="withPayload"><div class="docs-annotation"><a href="#withPayload" style="font-weight: bold;">withPayload</a> <span>:</span> Value <span>-&gt;</span> <a href="#Push">Push</a> msg <span>-&gt;</span> <a href="#Push">Push</a> msg</div><div class="docs-comment"><div><p> Attach a payload to a message</p>
 <pre><code><span class="hljs-title">payload</span> =
-    <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.object [(<span class="hljs-string">"msg"</span>, <span class="hljs-string">"Hello Phoenix"</span>)]
+    <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.object
+      [ ( <span class="hljs-string">"msg"</span>
+        , <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.string <span class="hljs-string">"Hello Phoenix"</span>
+        )
+      ]
 
 <span class="hljs-title">init</span> <span class="hljs-string">"room:lobby"</span> <span class="hljs-string">"new_msg"</span>
     |&gt; withPayload

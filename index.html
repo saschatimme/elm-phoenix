@@ -12,7 +12,7 @@
 <body>
     <div>
         <div class="center">
-    
+
 
 
 
@@ -40,7 +40,11 @@
 </div></div></div><span class="markdown-entry"><div><h1 id="push-messages">Push messages</h1>
 </div></span><div class="docs-entry" id="push"><div class="docs-annotation"><a href="#push" style="font-weight: bold;">push</a> <span>:</span> String <span>-&gt;</span> <a href="http://package.elm-lang.org/help/Phoenix-Push#Push">Push</a> msg <span>-&gt;</span> Cmd msg</div><div class="docs-comment"><div><p> Pushes a <code>Push</code> message to a particular socket address. The address has to be the same as with which you initalized the <code>Socket</code> in the <code>connect</code> subscription.</p>
 <pre><code><span class="hljs-title">payload</span> =
-    <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.object [(<span class="hljs-string">"msg"</span>, <span class="hljs-string">"Hello Phoenix"</span>)]
+    <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.object
+      [ ( <span class="hljs-string">"msg"</span>
+        ,  <span class="hljs-type">Json</span>.<span class="hljs-type">Encode</span>.string <span class="hljs-string">"Hello Phoenix"</span>
+        )
+      ]
 
 <span class="hljs-title">message</span> =
     <span class="hljs-type">Push</span>.init <span class="hljs-string">"room:lobby"</span> <span class="hljs-string">"new_msg"</span>
