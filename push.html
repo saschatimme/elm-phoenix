@@ -37,7 +37,7 @@
       ]
 
 <span class="hljs-title">init</span> <span class="hljs-string">"room:lobby"</span> <span class="hljs-string">"new_msg"</span>
-    |&gt; withPayload
+    |&gt; withPayload <span class="hljs-title">payload</span>
 </code></pre></div></div></div><div class="docs-entry" id="onOk"><div class="docs-annotation"><a href="#onOk" style="font-weight: bold;">onOk</a> <span>:</span> (Value <span>-&gt;</span> msg) <span>-&gt;</span> <a href="#Push">Push</a> msg <span>-&gt;</span> <a href="#Push">Push</a> msg</div><div class="docs-comment"><div><p> Callback if the server replies with an "ok" status.</p>
 <pre><code><span class="hljs-typedef"><span class="hljs-keyword">type</span> <span class="hljs-type">Msg</span> = <span class="hljs-type">MessageArrived</span> | ...</span>
 
@@ -49,7 +49,7 @@
     ]
 
 <span class="hljs-title">init</span> <span class="hljs-string">"room:lobby"</span> <span class="hljs-string">"new_msg"</span>
-    |&gt; withPayload
+    |&gt; withPayload <span class="hljs-title">payload</span>
     |&gt; onOk (\_ -&gt; <span class="hljs-type">MessageArrived</span>)
 </code></pre></div></div></div><div class="docs-entry" id="onError"><div class="docs-annotation"><a href="#onError" style="font-weight: bold;">onError</a> <span>:</span> (Value <span>-&gt;</span> msg) <span>-&gt;</span> <a href="#Push">Push</a> msg <span>-&gt;</span> <a href="#Push">Push</a> msg</div><div class="docs-comment"><div><p> Callback if the server replies with an "error" status.</p>
 <pre><code><span class="hljs-typedef"><span class="hljs-keyword">type</span> <span class="hljs-type">Msg</span> = <span class="hljs-type">MessageFailed</span> <span class="hljs-type">Value</span> | ...</span>
@@ -62,7 +62,7 @@
     ]
 
 <span class="hljs-title">init</span> <span class="hljs-string">"room:lobby"</span> <span class="hljs-string">"new_msg"</span>
-    |&gt; withPayload
+    |&gt; withPayload <span class="hljs-title">payload</span>
     |&gt; onError <span class="hljs-type">MessageFailed</span>
 </code></pre></div></div></div><div class="docs-entry" id="map"><div class="docs-annotation"><a href="#map" style="font-weight: bold;">map</a> <span>:</span> (a <span>-&gt;</span> b) <span>-&gt;</span> <a href="#Push">Push</a> a <span>-&gt;</span> <a href="#Push">Push</a> b</div><div class="docs-comment"><div><p> Applies the function on the onOk and onError callback</p>
 </div></div></div></div><div class="pkg-nav"><ul class="pkg-nav-value"><li><a class="pkg-nav-module" href="./index.html">Phoenix</a></li><li><a class="pkg-nav-module" href="./channel.html">Phoenix.Channel</a></li><li><a class="pkg-nav-module" href="./push.html">Phoenix.Push</a></li><li><a class="pkg-nav-module" href="./socket.html">Phoenix.Socket</a></li></ul></div></div></div><div class="footer">
